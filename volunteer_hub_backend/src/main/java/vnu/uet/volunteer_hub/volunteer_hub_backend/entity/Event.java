@@ -1,6 +1,6 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.entity;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,7 +31,7 @@ public class Event extends BaseEntity {
     @JoinColumn(name = "created_by_user_id", nullable = false)
     private User createdBy;
 
-    @Column(name = "title", length = 255, nullable = false)
+    @Column(name = "title", nullable = false)
     private String title;
 
     @Column(name = "description", columnDefinition = "TEXT")
@@ -41,10 +41,10 @@ public class Event extends BaseEntity {
     private String location;
 
     @Column(name = "start_time", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    private OffsetDateTime startTime;
+    private LocalDateTime startTime;
 
     @Column(name = "end_time", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    private OffsetDateTime endTime;
+    private LocalDateTime endTime;
 
     @Column(name = "max_volunteers")
     private Integer maxVolunteers;
