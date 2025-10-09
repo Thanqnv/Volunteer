@@ -29,7 +29,7 @@ public class Notification extends BaseEntity {
     @JoinColumn(name = "event_id")
     private Event event;
 
-    @Column(name = "title", length = 255, nullable = false)
+    @Column(name = "title", nullable = false)
     private String title;
 
     @Column(name = "body", columnDefinition = "TEXT", nullable = false)

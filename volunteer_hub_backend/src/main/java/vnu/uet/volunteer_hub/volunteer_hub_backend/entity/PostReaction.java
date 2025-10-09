@@ -1,6 +1,6 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.entity;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
@@ -38,5 +38,5 @@ public class PostReaction extends BaseEntity {
     private String comment;
 
     @Column(name = "comment_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    private OffsetDateTime commentAt;
+    private LocalDateTime commentAt;
 }
