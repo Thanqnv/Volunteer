@@ -10,4 +10,6 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
 public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
+
+    boolean existsByEmailIgnoreCase(String email);
 }

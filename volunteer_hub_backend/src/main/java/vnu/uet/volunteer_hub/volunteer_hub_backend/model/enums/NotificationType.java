@@ -1,4 +1,4 @@
-package vnu.uet.volunteer_hub.volunteer_hub_backend.entity.enums;
+package vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums;
 
 public enum NotificationType {
     REGISTRATION_SUBMITTED,
