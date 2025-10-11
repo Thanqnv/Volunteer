@@ -13,7 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.enums.ReactionType;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.ReactionType;
 
 @Getter
 @Setter

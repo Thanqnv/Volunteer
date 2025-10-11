@@ -1,7 +1,17 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.entity;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
@@ -16,20 +26,22 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "users")
+@ToString(exclude = { "roles", "createdEvents", "registrations", "posts", "postReactions", "notifications" })
 @AttributeOverride(name = "id", column = @Column(name = "user_id", nullable = false, updatable = false))
-public class User extends BaseEntity {
+public class User extends BaseEntity implements UserDetails {
 
     @Column(name = "name", length = 100, nullable = false)
     private String name;
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
-
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "password", columnDefinition = "TEXT", nullable = false)
     private String password;
 
@@ -64,4 +76,58 @@ public class User extends BaseEntity {
             isActive = Boolean.TRUE;
         }
     }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // phòng trường hợp roles = null
+        return (roles == null ? List.<GrantedAuthority>of()
+                : roles.stream()
+                        .filter(Objects::nonNull)
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
+                        .collect(Collectors.toSet()));
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(this.isActive);
+    }
+
+    // equals & hashCode: dùng email (lowercased) như business key
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof User))
+            return false;
+        User that = (User) o;
+        return Objects.equals(
+                this.email == null ? null : this.email.toLowerCase(),
+                that.email == null ? null : that.email.toLowerCase());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.email == null ? null : this.email.toLowerCase());
+    }
+
 }

@@ -18,7 +18,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.enums.EventApprovalStatus;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.EventApprovalStatus;
 
 @Getter
 @Setter
