@@ -81,13 +81,13 @@ const FlightCard = ({ flight }) => (
 
 const Places = ({ image, country, tours, column }) => (
   <div className={`relative overflow-hidden h-[270px] lg:col-span-${column}`}>
-    <Image
-      src={image}
-      alt=""
-      className="h-full w-full rounded-lg object-cover hoverImg"
-      layout="responsive"
-      width={500}
-      height={500}
+    <Image 
+      src={image} 
+      alt="" 
+      className="h-full w-full rounded-lg object-cover hoverImg" 
+      layout="responsive" 
+      width={500} 
+      height={500} 
     />
     <p className="text-3xl text-white font-semibold absolute left-6 bottom-6">{country}</p>
     <button className="bg-green-500 text-white rounded-lg px-4 py-2 text-xs font-semibold absolute top-4 right-4">
@@ -99,14 +99,14 @@ const Places = ({ image, country, tours, column }) => (
 const Tours = ({ image, name }) => (
   <div>
     <div className="relative overflow-hidden rounded-t-lg">
-      <Image
-        src={image}
-        alt=""
-        className="rounded-t-lg hoverImg"
-        layout="intrinsic"
-        width={500}
-        height={300}
-      />
+    <Image 
+      src={image} 
+      alt="" 
+      className="rounded-t-lg hoverImg" 
+      layout="intrinsic" 
+      width={500} 
+      height={300} 
+    />
       <div className="absolute flex justify-between top-4 left-4 right-4">
         <p className="bg-[#14B0C3] rounded-md px-4 py-1 text-white text-sm">FEATURED</p>
         <button className="bg-[#00000066] p-1 rounded-md">
@@ -172,12 +172,12 @@ export default function Destination() {
 
   return (
     <div className="lg:mt-60 mt-10" data-aos="fade-down">
-
+      
       <div className="max-w-[1200px] px-6 mx-auto text-center">
-        {/* <p className="text-green-500 text-xl">Featured Flights</p> */}
-        <h4 className="font-bold lg:text-[50px] text-[30px] py-4">Các sự kiện nổi bật</h4>
+      {/* <p className="text-green-500 text-xl">Featured Flights</p> */}
+      <h4 className="font-bold lg:text-[50px] text-[30px] py-4">Các sự kiện nổi bật</h4>
 
-        {/* Flights List */}
+      {/* Flights List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {flights.slice(0, visibleCount).map((flight) => (
             <FlightCard key={flight.id} flight={flight} />
@@ -192,20 +192,20 @@ export default function Destination() {
             </Button>
           </div>
         )}
-
-      </div>
-
-
+    
+    </div>
+      
+      
       <div className="bg-[url(/bg-line-bird.png)] bg-no-repeat py-16">
         <div className="lg:flex max-w-[1200px] px-6 mx-auto gap-8">
           <div className="relative lg:w-1/2" data-aos="fade-down">
-            <Image
-              src="/image-6.jpg"
-              alt="Descriptive text"
-              width={500}
-              height={500}
-              priority
-            />
+          <Image 
+            src="/image-6.jpg" 
+            alt="Descriptive text" 
+            width={500} 
+            height={500} 
+            priority 
+          />
             <div className="absolute top-4 right-4">
               <p className="text-green-500 font-semibold text-[80px]">10%</p>
               <p className="text-[50px] font-semibold -mt-8">Giảm giá</p>
@@ -219,7 +219,7 @@ export default function Destination() {
             <p className="text-green-500 text-xl">Hãy đến với chúng tôi</p>
             <h4 className="font-bold lg:text-[50px] text-[30px] py-4">Quản lý hoạt động tình nguyện của bạn dễ dàng hơn với VolunteerHub </h4>
             <p className="text-[#757783] leading-8 mb-8">
-              Bạn có biết? Một hoạt động tình nguyện thành công không chỉ đến từ tấm lòng, mà còn từ cách tổ chức chuyên nghiệp.
+            Bạn có biết? Một hoạt động tình nguyện thành công không chỉ đến từ tấm lòng, mà còn từ cách tổ chức chuyên nghiệp.
             </p>
             <span className="flex items-center gap-4 py-2 font-medium">
               <MdCheck className="bg-green-500 text-white rounded-xl" /> Tạo và quản lý các chương trình tình nguyện của bạn

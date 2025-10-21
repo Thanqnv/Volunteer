@@ -19,14 +19,14 @@ export default function About() {
                 <FaPlay className="text-white" />
               </button>
               <p className="text-green-500 text-xl pb-2">
-                Bạn đã sẵn sàng để bay chưa?
+                Bạn đã sẵn sàng để tham gia tình nguyện chưa ?
               </p>
             </span>
             <p
               className="lg:text-[50px] leading-normal text-2xl font-bold text-white lg:pb-0 pb-4"
               data-aos="fade-up-right"
             >
-              QAirline là nền tảng đặt vé máy bay hàng đầu thế giới
+              VolunteerHub là nền tảng quản lý tình nguyện hàng đầu tại Việt Nam
             </p>
           </div>
 
@@ -40,7 +40,7 @@ export default function About() {
               data-aos="fade-down-right"
             >
               <FaPlaneDeparture className="text-2xl w-20 h-20" />
-              <p className="text-white text-xl font-semibold">Flight Booking</p>
+              <p className="text-white text-xl font-semibold">Tạo sự kiện</p>
             </div>
 
             <div
@@ -48,7 +48,7 @@ export default function About() {
               data-aos="fade-down-right"
             >
               <MdFlight className="text-2xl w-20 h-20" />
-              <p className="text-white text-xl font-semibold">Flight Status</p>
+              <p className="text-white text-xl font-semibold">Khám phá hoạt động</p>
             </div>
 
             <div
@@ -56,7 +56,7 @@ export default function About() {
               data-aos="fade-down-right"
             >
               <GiPriceTag className="text-2xl w-20 h-20" />
-              <p className="text-white text-xl font-semibold">Travel Deals</p>
+              <p className="text-white text-xl font-semibold">Theo dõi tiến độ</p>
             </div>
 
             <div
@@ -64,7 +64,7 @@ export default function About() {
               data-aos="fade-down-right"
             >
               <AiOutlineCheckCircle className="text-2xl w-20 h-20" />
-              <p className="text-white text-xl font-semibold">Check-in Online</p>
+              <p className="text-white text-xl font-semibold">Kết nối cộng đồng</p>
             </div>
           </div>
 
