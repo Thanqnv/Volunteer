@@ -47,7 +47,7 @@ const navItems = [
   },
   {
     name: 'Quản lý sự kiện',
-    href: '/admin/flights',
+    href: '/admin/eventManage',
     icon: CalendarDays
   },
   {
@@ -65,6 +65,11 @@ const navItems = [
     href: '/admin/profile',
     icon: User
   },
+  {
+    name: 'Dashboard',
+    href: '/admin/events',
+    icon: User
+  }
 ]
 
 export default function Navbar() {

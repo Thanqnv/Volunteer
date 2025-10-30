@@ -1,10 +1,12 @@
 import * as React from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { SlideUpDetail } from "@/components/ui/slide-up"
+import { useState } from "react"
 
 export default function EventList() {
-    const [open, setOpen] = React.useState(false)
-    const [selected, setSelected] = React.useState(null)
+
+    const [open, setOpen] = useState(false)
+    const [selected, setSelected] = useState(null)
 
     const events = [
         { id: 1, title: "Summer Music Fest", desc: "Lễ hội âm nhạc mùa hè sôi động" },

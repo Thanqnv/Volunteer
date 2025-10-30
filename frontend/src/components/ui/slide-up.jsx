@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function SlideUpDetail({ isOpen, onClose, title, children, className }) {
+export function SlideUpDetail({ isOpen, onClose, title, description, mainContent, children, className }) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -29,7 +29,12 @@ export function SlideUpDetail({ isOpen, onClose, title, children, className }) {
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     >
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-semibold">{title}</h2>
+                            <div>
+                                <h2 className="text-xl font-semibold">{title}</h2>
+                                {description && (
+                                    <p className="text-sm text-gray-600 mt-1">{description}</p>
+                                )}
+                            </div>
                             <button
                                 onClick={onClose}
                                 className="p-2 rounded-full hover:bg-gray-100 transition"
