@@ -10,10 +10,25 @@ const suffix = (
         }}
     />
 );
-const onSearch = (value, _e, info) => console.log(info?.source, value);
-const App = () => (
-    <Space direction="vertical">
-        <Search placeholder="input search text" onSearch={onSearch} enterButton />
+const SearchBar = ({
+    className,
+    placeholder = "Tìm kiếm sự kiện...",
+    value,
+    onChange,
+    onSearch,
+    allowClear = true,
+    size = "middle",
+}) => (
+    <Space direction="horizontal" className={className}>
+        <Search
+            placeholder={placeholder}
+            value={value}
+            onChange={onChange}
+            onSearch={onSearch}
+            allowClear={allowClear}
+            enterButton
+            size={size}
+        />
     </Space>
 );
-export default App;
+export default SearchBar;

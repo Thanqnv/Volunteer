@@ -21,7 +21,7 @@ const formatDate = dateStr => {
     })
 }
 
-const EventCard = ({ event, onRegister, onCancel }) => {
+const EventCard = ({ event, onRegister, onCancel, onClick }) => {
     const [applied, setApplied] = useState(
         event?.user_registration_status === "Applied"
     )
@@ -29,18 +29,27 @@ const EventCard = ({ event, onRegister, onCancel }) => {
     const now = new Date()
     const isClosed = new Date(event?.registration_deadline) < now
 
-    const handleRegister = () => {
+    const handleRegister = (e) => {
+        e.stopPropagation() // Ngăn event lan lên card
         setApplied(true)
         onRegister && onRegister(event?.event_id)
     }
 
-    const handleCancel = () => {
+    const handleCancel = (e) => {
+        e.stopPropagation() // Ngăn event lan lên card
         setApplied(false)
         onCancel && onCancel(event?.event_id)
     }
 
+    const handleCardClick = () => {
+        onClick && onClick(event?.event_id)
+    }
+
     return (
-        <div className="relative max-w-md rounded-xl bg-gradient-to-r from-indigo-200 to-sky-300 pt-0 shadow-lg overflow-hidden">
+        <div
+            className="relative max-w-md rounded-xl bg-gradient-to-r from-indigo-200 to-sky-300 pt-0 shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
+            onClick={handleCardClick}
+        >
             {/* Header hình ảnh */}
             <div
                 className="h-48 bg-cover bg-center"

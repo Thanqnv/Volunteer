@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function SlideUpDetail({ isOpen, onClose, title, description, mainContent, children, className }) {
+export default function SlideUpDetail({ isOpen, onClose, title, description, children, className, variant = "default" }) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -20,7 +20,9 @@ export function SlideUpDetail({ isOpen, onClose, title, description, mainContent
                     {/* Panel trượt lên */}
                     <motion.div
                         className={cn(
-                            "fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-lg p-6 max-h-[85vh] overflow-y-auto",
+                            variant === "phone"
+                                ? "fixed bottom-0 left-1/2 -translate-x-1/2 z-50 bg-white rounded-t-2xl shadow-lg p-6 h-[100vh] w-full max-w-[420px] overflow-y-auto"
+                                : "fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-lg p-6 max-h-[85vh] overflow-y-auto",
                             className
                         )}
                         initial={{ y: "100%" }}
