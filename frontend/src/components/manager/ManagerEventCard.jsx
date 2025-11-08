@@ -13,6 +13,7 @@ export default function ManagerEventCard({
   tone = "managed",
   onCardClick,
   actions = [],
+  statusMessage,
 }) {
   const [start, end] = getDateParts(event?.date || "");
   const isClickable = Boolean(onCardClick);
@@ -21,6 +22,11 @@ export default function ManagerEventCard({
     <div
       className={`${toneClasses[tone] || toneClasses.managed} rounded-3xl p-4 shadow-lg border border-white/60 flex flex-col gap-4 transition hover:shadow-xl`}
     >
+      {statusMessage && (
+        <div className="inline-flex items-center gap-2 text-xs font-semibold text-amber-700 bg-amber-100/80 border border-amber-200 rounded-full px-3 py-1 w-fit">
+          {statusMessage}
+        </div>
+      )}
       <div
         role={onCardClick ? "button" : undefined}
         tabIndex={onCardClick ? 0 : undefined}

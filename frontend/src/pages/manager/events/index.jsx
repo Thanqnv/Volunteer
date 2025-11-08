@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 import ManagerEventCard from "@/components/manager/ManagerEventCard";
 import CreateEventModal from "@/components/manager/CreateEventModal";
@@ -59,21 +59,6 @@ export default function EventsIndexPage() {
       ? pendingEvents[editingContext.index]
       : null;
 
-  const handleApprove = (index) => {
-    const event = pendingEvents[index];
-    if (!event) return;
-
-    setPendingEvents((prev) => prev.filter((_, i) => i !== index));
-    setManagedEvents((prev) => [{ ...event, status: "approved" }, ...prev]);
-    setAlert({ type: "success", message: "Dự án đã được duyệt." });
-  };
-
-  const handleReject = (index) => {
-    if (!window.confirm("Bạn có chắc muốn từ chối dự án này?")) return;
-    setPendingEvents((prev) => prev.filter((_, i) => i !== index));
-    setAlert({ type: "success", message: "Dự án đã bị từ chối." });
-  };
-
   const handleDelete = (tab, index) => {
     if (!window.confirm("Bạn có chắc muốn xóa dự án này?")) return;
     if (tab === "managed") {
@@ -124,19 +109,19 @@ export default function EventsIndexPage() {
     if (tab === "managed") {
       return [
         {
-          label: "Thêm thông tin",
+          label: "Them thong tin",
           icon: Plus,
           className: "text-[#2F80ED]",
           onClick: () => router.push(`/manager/events/${index}`),
         },
         {
-          label: "Sửa",
+          label: "Sua",
           icon: Pencil,
           className: "text-[#F2994A]",
           onClick: () => handleEdit("managed", index),
         },
         {
-          label: "Xóa",
+          label: "Xoa",
           icon: Trash2,
           className: "text-[#EB5757]",
           onClick: () => handleDelete("managed", index),
@@ -146,20 +131,19 @@ export default function EventsIndexPage() {
 
     return [
       {
-        label: "Duyệt",
-        icon: CheckCircle2,
-        className: "text-[#27AE60]",
-        onClick: () => handleApprove(index),
+        label: "Sua",
+        icon: Pencil,
+        className: "text-[#F2994A]",
+        onClick: () => handleEdit("pending", index),
       },
       {
-        label: "Từ chối",
-        icon: XCircle,
+        label: "Xoa",
+        icon: Trash2,
         className: "text-[#EB5757]",
-        onClick: () => handleReject(index),
+        onClick: () => handleDelete("pending", index),
       },
     ];
   };
-
   return (
     <div className="bg-gray-100 min-h-screen overflow-hidden">
       <div className="mx-auto px-6 lg:px-10 pt-24 grid grid-cols-12 gap-8">
@@ -192,13 +176,25 @@ export default function EventsIndexPage() {
             >
               {displayedEvents.length > 0 ? (
                 displayedEvents.map((event, index) => (
-                  <ManagerEventCard
-                    key={`${event.title}-${index}`}
-                    event={event}
-                    tone={activeTab === "managed" ? "managed" : "pending"}
-                    onCardClick={() => router.push(`/manager/events/${index}`)}
-                    actions={buildActions(activeTab, index)}
-                  />
+                  <div key={`${event.title}-${index}`} className="space-y-3">
+                    <ManagerEventCard
+                      event={event}
+                      tone={activeTab === "managed" ? "managed" : "pending"}
+                      onCardClick={() => router.push(`/manager/events/${index}`)}
+                      actions={buildActions(activeTab, index)}
+                      statusMessage={
+                        activeTab === "pending"
+                          ? "Cho duoc xet duyet"
+                          : undefined
+                      }
+                    />
+                    {activeTab === "pending" && (
+                      <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-800">
+                        Du an ban tao dang cho admin VolunteerHub duyet. Ban se
+                        nhan duoc thong bao ngay khi co ket qua.
+                      </div>
+                    )}
+                  </div>
                 ))
               ) : (
                 <p className="text-gray-600 text-center col-span-2 italic">
