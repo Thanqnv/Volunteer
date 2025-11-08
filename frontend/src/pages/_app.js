@@ -1,6 +1,7 @@
 import '../styles/index.css';
 import MainLayout from "../layouts/MainLayout";
 import AdminLayout from "../layouts/AdminLayout";
+import ManagerLayout from "../layouts/ManagerLayout";
 import UserLayout from "../layouts/UserLayout";
 import { AuthProvider } from '../context/AuthContext';
 import { useRouter } from "next/router";
@@ -14,6 +15,7 @@ function MyApp({ Component, pageProps }) {
   const isValidAdminPage = router.pathname.startsWith('/admin');
   const isAdminLoginPage = router.pathname === '/admin';
   const isUserPage = router.pathname.startsWith('/user');
+  const isManagerPage = router.pathname.startsWith('/manager');
 
   return (
     <AuthProvider>
@@ -24,6 +26,14 @@ function MyApp({ Component, pageProps }) {
           <AdminLayout>
             <Component {...pageProps} />
           </AdminLayout>
+        )
+      ) : isManagerPage ? (
+        router.pathname === '/manager' ? (
+          <Component {...pageProps} />
+        ) : (
+          <ManagerLayout>
+            <Component {...pageProps} />
+          </ManagerLayout>
         )
       ) : isUserPage ? (
         <UserLayout>
