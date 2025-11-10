@@ -79,13 +79,17 @@ export default function EventsIndexPage() {
       if (editingContext.tab === "managed") {
         setManagedEvents((prev) =>
           prev.map((evt, i) =>
-            i === editingContext.index ? { ...evt, ...newEvent, status: evt.status } : evt
+            i === editingContext.index
+              ? { ...evt, ...newEvent, status: evt.status }
+              : evt
           )
         );
       } else {
         setPendingEvents((prev) =>
           prev.map((evt, i) =>
-            i === editingContext.index ? { ...evt, ...newEvent, status: evt.status } : evt
+            i === editingContext.index
+              ? { ...evt, ...newEvent, status: evt.status }
+              : evt
           )
         );
       }
@@ -109,19 +113,19 @@ export default function EventsIndexPage() {
     if (tab === "managed") {
       return [
         {
-          label: "Them thong tin",
+          label: "Thêm thông tin",
           icon: Plus,
           className: "text-[#2F80ED]",
           onClick: () => router.push(`/manager/events/${index}`),
         },
         {
-          label: "Sua",
+          label: "Sửa",
           icon: Pencil,
           className: "text-[#F2994A]",
           onClick: () => handleEdit("managed", index),
         },
         {
-          label: "Xoa",
+          label: "Xóa",
           icon: Trash2,
           className: "text-[#EB5757]",
           onClick: () => handleDelete("managed", index),
@@ -131,81 +135,92 @@ export default function EventsIndexPage() {
 
     return [
       {
-        label: "Sua",
+        label: "Sửa",
         icon: Pencil,
         className: "text-[#F2994A]",
         onClick: () => handleEdit("pending", index),
       },
       {
-        label: "Xoa",
+        label: "Xóa",
         icon: Trash2,
         className: "text-[#EB5757]",
         onClick: () => handleDelete("pending", index),
       },
     ];
   };
+
   return (
-    <div className="bg-gray-100 min-h-screen overflow-hidden">
-      <div className="mx-auto px-6 lg:px-10 pt-24 grid grid-cols-12 gap-8">
-        <div className="col-span-12 lg:col-span-8 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar pr-0 lg:pr-2">
-          <div className="flex justify-center mb-10">
-            <button
-              onClick={() => {
-                setEditingContext(null);
-                setShowModal(true);
-              }}
-              className="bg-white hover:bg-gray-50 shadow-md px-8 py-6 rounded-lg border flex flex-col items-center justify-center transition"
-            >
-              <div className="text-5xl font-bold text-gray-700">+</div>
-              <p className="text-xl font-semibold text-gray-800">Tạo dự án</p>
-            </button>
-          </div>
+    <div className="bg-gray-100 min-h-screen w-screen overflow-hidden">
+      {/* Lớp chứa toàn màn hình */}
+      <div className="w-full min-h-screen pt-24 px-6 lg:px-10 flex flex-col items-center">
+        {/* Giới hạn nội dung ở giữa (tuỳ chọn, có thể bỏ nếu muốn tràn hết) */}
+        <div className="w-full max-w-[1400px]">
+          <div className="h-[calc(100vh-120px)] overflow-y-auto no-scrollbar">
+            {/* Nút tạo dự án */}
+            <div className="flex justify-start mb-10 pl-96">
+              <button
+                onClick={() => {
+                  setEditingContext(null);
+                  setShowModal(true);
+                }}
+                className="bg-white hover:bg-gray-50 shadow-md px-8 py-6 rounded-lg border flex flex-col items-center justify-center transition"
+              >
+                <div className="text-5xl font-bold text-gray-700">+</div>
+                <p className="text-xl font-semibold text-gray-800">Tạo dự án</p>
+              </button>
+            </div>
 
-          <div className="mb-4">
-            <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-          </div>
+            {/* Tabs */}
+            <div className="mb-4">
+              <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+            </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.4 }}
-              className="p-6 rounded-lg shadow-sm grid sm:grid-cols-2 gap-6 bg-transparent"
-            >
-              {displayedEvents.length > 0 ? (
-                displayedEvents.map((event, index) => (
-                  <div key={`${event.title}-${index}`} className="space-y-3">
-                    <ManagerEventCard
-                      event={event}
-                      tone={activeTab === "managed" ? "managed" : "pending"}
-                      onCardClick={() => router.push(`/manager/events/${index}`)}
-                      actions={buildActions(activeTab, index)}
-                      statusMessage={
-                        activeTab === "pending"
-                          ? "Cho duoc xet duyet"
-                          : undefined
-                      }
-                    />
-                    {activeTab === "pending" && (
-                      <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-800">
-                        Du an ban tao dang cho admin VolunteerHub duyet. Ban se
-                        nhan duoc thong bao ngay khi co ket qua.
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-600 text-center col-span-2 italic">
-                  Không có dự án nào trong danh sách.
-                </p>
-              )}
-            </motion.div>
-          </AnimatePresence>
+            {/* Danh sách dự án */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4 }}
+                className="p-6 rounded-lg shadow-sm grid sm:grid-cols-2 md:grid-cols-3 gap-6 bg-transparent"
+              >
+                {displayedEvents.length > 0 ? (
+                  displayedEvents.map((event, index) => (
+                    <div key={`${event.title}-${index}`} className="space-y-3">
+                      <ManagerEventCard
+                        event={event}
+                        tone={activeTab === "managed" ? "managed" : "pending"}
+                        onCardClick={() =>
+                          router.push(`/manager/events/${index}`)
+                        }
+                        actions={buildActions(activeTab, index)}
+                        statusMessage={
+                          activeTab === "pending"
+                            ? "Chờ được xét duyệt"
+                            : undefined
+                        }
+                      />
+                      {activeTab === "pending" && (
+                        <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-800">
+                          Dự án bạn tạo đang chờ admin VolunteerHub duyệt. Bạn
+                          sẽ nhận được thông báo ngay khi có kết quả.
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-600 text-center col-span-full italic">
+                    Không có dự án nào trong danh sách.
+                  </p>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
+      {/* Modal tạo / sửa */}
       {showModal && (
         <CreateEventModal
           onClose={() => {
@@ -217,6 +232,7 @@ export default function EventsIndexPage() {
         />
       )}
 
+      {/* Thông báo */}
       {alert && (
         <SimpleAlert
           type={alert.type}
