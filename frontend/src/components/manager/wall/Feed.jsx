@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useMemo, useState } from "react";
 
@@ -6,24 +6,24 @@ function PostCard({ post, onToggleLike, onAddComment }) {
   const [commentText, setCommentText] = useState("");
 
   return (
-    <article className="bg-white p-4 rounded-lg shadow-sm">
+    <article className="bg-white p-5 rounded-xl shadow-sm">
       {/* Header */}
       <header className="flex items-center gap-3">
         <img
           src={post.group.avatar}
           alt="grp"
-          className="h-10 w-10 rounded-full object-cover"
+          className="h-9 w-9 rounded-full object-cover"
         />
         <div className="flex-1">
-          <div className="text-sm font-semibold">
-            {post.group.name} • {post.author}
+          <div className="text-sm font-semibold text-slate-800">
+            {post.group.name} - <span className="font-normal">{post.author}</span>
           </div>
           <div className="text-xs text-slate-500">{post.time}</div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="mt-3 text-sm text-slate-700">{post.content}</div>
+      <div className="mt-3 text-base text-slate-700 leading-relaxed">{post.content}</div>
 
       {/* Media */}
       {post.media && (
@@ -31,7 +31,7 @@ function PostCard({ post, onToggleLike, onAddComment }) {
           <img
             src={post.media}
             alt="media"
-            className="w-full max-h-64 object-cover rounded-md"
+            className="w-full max-h-[420px] object-cover rounded-lg shadow-sm"
           />
         </div>
       )}
@@ -66,13 +66,13 @@ function PostCard({ post, onToggleLike, onAddComment }) {
 
           {/* Comment input + send button */}
           <div className="flex-1 ml-3">
-            <div className="flex items-center border border-slate-400 rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-200 transition">
+            <div className="flex items-center border border-slate-200 rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-blue-200 transition">
               <input
                 type="text"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Viết bình luận..."
-                className="flex-1 px-4 py-1.5 text-sm bg-transparent focus:outline-none"
+                className="flex-1 px-4 py-2 text-sm bg-transparent focus:outline-none"
               />
               <button
                 type="button"
@@ -82,7 +82,7 @@ function PostCard({ post, onToggleLike, onAddComment }) {
                     setCommentText("");
                   }
                 }}
-                className="h-full px-4 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition rounded-r-full"
+                className="h-full px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition rounded-r-full"
                 title="Gửi bình luận"
               >
                 Gửi
@@ -97,23 +97,36 @@ function PostCard({ post, onToggleLike, onAddComment }) {
 
 export default function Feed({
   posts: initialPosts = [],
-  groups = [],
-  filterGroupId: initialFilter,
+  filterGroupId: externalFilter,
 }) {
-  const [filterGroupId, setFilterGroupId] = useState(initialFilter || "all");
   const [posts, setPosts] = useState(initialPosts);
+  const [sortMode, setSortMode] = useState("activity");
+  const activeGroupId = externalFilter || "all";
 
-  const groupOptions = useMemo(
-    () => [{ id: "all", name: "Tất cả nhóm" }, ...groups],
-    [groups]
-  );
+  const filteredPosts = useMemo(() => {
+    if (activeGroupId === "all") return posts;
+    return posts.filter((p) => p.group?.id === activeGroupId);
+  }, [posts, activeGroupId]);
 
-  const visiblePosts = useMemo(() => {
-    if (filterGroupId === "all") return posts;
-    return posts.filter((p) => p.group.id === filterGroupId);
-  }, [posts, filterGroupId]);
+  const sortedPosts = useMemo(() => {
+    const list = [...filteredPosts];
+    const getTimestamp = (value) => (value ? new Date(value).getTime() : 0);
 
-  /** ❤️ Toggle Like */
+    if (sortMode === "activity") {
+      return list.sort(
+        (a, b) =>
+          (getTimestamp(b.lastCommentAt) || getTimestamp(b.createdAt)) -
+          (getTimestamp(a.lastCommentAt) || getTimestamp(a.createdAt))
+      );
+    }
+
+    return list.sort(
+      (a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt)
+    );
+  }, [filteredPosts, sortMode]);
+
+
+  /** â¤ï¸ Toggle Like */
   function handleToggleLike(postId) {
     setPosts((prev) =>
       prev.map((p) =>
@@ -139,6 +152,7 @@ export default function Feed({
           ? {
               ...p,
               stats: { ...p.stats, comments: p.stats.comments + 1 },
+              lastCommentAt: new Date().toISOString(),
               comments: [...(p.comments || []), text],
             }
           : p
@@ -154,26 +168,23 @@ export default function Feed({
         <div className="flex items-center gap-3">
           <label className="text-sm text-slate-600">Lọc:</label>
           <select
-            value={filterGroupId}
-            onChange={(e) => setFilterGroupId(e.target.value)}
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value)}
             className="border rounded p-1 text-sm"
           >
-            {groupOptions.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
+            <option value="activity">Hoạt động mới đây nhất</option>
+            <option value="newest">Bài viết mới</option>
           </select>
         </div>
       </div>
 
       {/* Posts */}
       <div className="space-y-3">
-        {visiblePosts.length === 0 && (
-          <div className="text-sm text-slate-500">Không có bài đăng nào.</div>
+        {sortedPosts.length === 0 && (
+          <div className="text-sm text-slate-500">KhÃ´ng cÃ³ bÃ i Ä‘Äƒng nÃ o.</div>
         )}
 
-        {visiblePosts.map((post) => (
+        {sortedPosts.map((post) => (
           <PostCard
             key={post.id}
             post={post}
@@ -185,3 +196,4 @@ export default function Feed({
     </main>
   );
 }
+
