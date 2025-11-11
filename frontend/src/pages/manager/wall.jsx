@@ -39,6 +39,8 @@ export default function ManagerWallPage() {
         group: { id: "g1", name: "Trồng cây ven sông", avatar: groups[0].avatar },
         author: "Nguyễn Hoài An",
         time: "15 phút trước",
+        createdAt: "2025-11-12T00:50:00.000Z",
+        lastCommentAt: "2025-11-12T01:05:00.000Z",
         content:
           "Admin đã duyệt bổ sung kinh phí, nhóm có thể đặt thêm 40 cây sao đen 🌱. Cần 6 TNV phụ trách vận chuyển vào sáng thứ 7!",
         media:
@@ -51,6 +53,8 @@ export default function ManagerWallPage() {
         group: { id: "g2", name: "Phiên chợ 0 đồng", avatar: groups[1].avatar },
         author: "Lưu Gia Khánh",
         time: "1 giờ trước",
+        createdAt: "2025-11-11T23:55:00.000Z",
+        lastCommentAt: "2025-11-12T00:10:00.000Z",
         content:
           "Checklist mới cho phiên chợ đã cập nhật lên drive. Mọi người kiểm tra lại bàn giao vật phẩm, nhóm quần áo trẻ em lưu ý!",
         tags: ["phiencho", "checklist"],
@@ -81,7 +85,7 @@ export default function ManagerWallPage() {
             <div className="text-sm text-slate-600">Bạn đang đăng dưới tư cách: <span className="font-medium">Quản trị viên</span></div>
           </div>
 
-          <Feed posts={posts} groups={groups} filterGroupId={selectedGroupId} />
+          <Feed posts={posts} filterGroupId={selectedGroupId} />
         </section>
 
         <aside className="sticky top-6 space-y-5 h-fit">
