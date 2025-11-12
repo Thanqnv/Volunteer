@@ -1,22 +1,55 @@
+import { Card } from "@/components/ui/card";
 import { useRouter } from "next/router";
+import { get } from "rc-util";
+import { ContainerResponsive } from "@/components/ui/exchangeChannel/groupCard";
 
-export default function GroupDetail() {
+export default async function GroupDetail() {
   const router = useRouter();
   const { groupId } = router.query;
 
-  const groupData = {
-    "react-vietnam": { name: "React Vietnam", desc: "Cộng đồng React Việt Nam" },
-    "frontend-devs": { name: "Frontend Devs", desc: "Nhóm lập trình frontend" },
+  const getAllGroup = async () => {
+    const getAllGroupApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/exchange-channel/groups`;
+
+    try {
+      const response = await fetch(getAllGroupApi);
+      if (!response.ok) throw new Error("Failed to fetch");
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
   };
-
-  const group = groupData[groupId];
-
-  if (!group) return <p>Nhóm không tồn tại</p>;
+  const groups = await getAllGroup();
+  if (!group) {
+    return (
+      <div class="">Group not found</div>
+    );
+  }
 
   return (
     <div>
-      <h1>{group.name}</h1>
-      <p>{group.desc}</p>
+      <div>
+        {groups.map((group) => (
+          <div key={group.id}>
+            <Card>
+              <CardHeader>
+                <CardTitle>{get(group, "attributes.name", "No Name")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  {get(group, "attributes.description", "No Description")}
+                </CardDescription>
+              </CardContent>
+              <CardFooter>
+                <Button variant="contained" color="primary">
+                  View Details
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

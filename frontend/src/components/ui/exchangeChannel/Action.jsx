@@ -1,63 +1,36 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const ActionSymbol = ({ type = 'like', count: initialCount = 0 }) => {
-    
-  const [isSelected, setIsSelected] = useState(false);
-  const [count, setCount] = useState(initialCount);
+import { cn } from '@/lib/utils.js';
 
-  const config = {
-    like: {
-      icon: '👍',
-      text: 'Like',
-      selectedColor: 'text-blue-600',
-      unselectedColor: 'text-gray-600',
-    },
-    love: {
-      icon: '❤️',
-      text: 'Yêu thích',
-      selectedColor: 'text-red-600',
-      unselectedColor: 'text-gray-600',
-    },
-    support: {
-      icon: '💪',
-      text: 'Ủng hộ',
-      selectedColor: 'text-green-600',
-      unselectedColor: 'text-gray-600',
-    },
-  };
-
-  const { icon, text, selectedColor, unselectedColor } = config[type] || config.like;
-  const iconColor = isSelected ? selectedColor : unselectedColor;
-
-  const handleClick = () => {
-    if (isSelected) {
-      setCount(count - 1);
-      setIsSelected(false);
-    } else {
-      setCount(count + 1);
-      setIsSelected(true);
-    }
-  };
-
+const Action = (props) => {
+  const {
+    color,
+    bg,
+    size,
+    fontSize,
+    fontWeight,
+    isDisabled,
+    isLoading,
+    children,
+    block,
+  } = props;
   return (
     <button
-      onClick={handleClick}
-      className={`flex items-center space-x-2 rounded-md px-3 py-2 transition-colors hover:bg-gray-100 focus:outline-none dark:hover:bg-neutral-700 ${
-        isSelected ? 'bg-gray-100 dark:bg-neutral-700' : ''
-      }`}
-    >
-      <span className={`text-lg ${iconColor}`}>{icon}</span>
-      <span className={`text-sm font-medium ${iconColor} dark:text-gray-300`}>
-        {text}
-      </span>
-      {count > 0 && (
-        <span className={`text-sm font-semibold ${iconColor} dark:text-gray-300`}>
-          {count}
-        </span>
+      {...props}
+      className={cn(
+        'items-center justify-center rounded-md px-4 shadow-md',
+        block ? 'w-full' : 'inline-block',
+        size === 'small' ? 'h-7' : size === 'large' ? 'h-11' : 'h-8',
+        bg ? bg : 'bg-primary',
+        color ? color : 'text-white',
+        fontWeight ? fontWeight : 'font-semibold',
+        fontSize ? fontSize : 'text-sm',
       )}
+      disabled={isDisabled}
+    >
+      {isLoading ? '...' : children}
     </button>
   );
 };
 
-export default ActionSymbol;
-
+export default Action;
