@@ -17,14 +17,20 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.data.redis.core.ZSetOperations.TypedTuple;
 
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreatePostRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.AuthorSummaryDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.EventSummaryDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.PostDetailResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ScoredPostDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Event;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Post;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.EventApprovalStatus;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.EventRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.PostRepository;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.PostReactionRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RegistrationRepository;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.PostRankingService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.PostService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.ScoringService;
@@ -36,15 +42,23 @@ public class PostServiceImpl implements PostService {
     private final PostRankingService postRankingService;
     private final ScoringService scoringService;
     private final RegistrationRepository registrationRepository;
+    private final UserRepository userRepository;
+    private final EventRepository eventRepository;
+    private final PostReactionRepository postReactionRepository;
     private final int candidateMultiplier;
 
     public PostServiceImpl(PostRepository postRepository, PostRankingService postRankingService,
             ScoringService scoringService, RegistrationRepository registrationRepository,
+            UserRepository userRepository, EventRepository eventRepository,
+            PostReactionRepository postReactionRepository,
             @Value("${posts.feed.candidate-multiplier:5}") int candidateMultiplier) {
         this.postRepository = postRepository;
         this.postRankingService = postRankingService;
         this.scoringService = scoringService;
         this.registrationRepository = registrationRepository;
+        this.userRepository = userRepository;
+        this.eventRepository = eventRepository;
+        this.postReactionRepository = postReactionRepository;
         this.candidateMultiplier = candidateMultiplier;
     }
 
@@ -148,10 +162,8 @@ public class PostServiceImpl implements PostService {
         double total = totalScoreOverride == null ? scoringService.computeTotalScore(p) : totalScoreOverride;
         Double personalized = viewer.isEmpty() ? null
                 : scoringService.computePersonalizedScore(p, viewer);
-        int commentCount = p.getReactions() == null ? 0
-                : (int) p.getReactions().stream().filter(r -> r.getComment() != null && !r.getComment().isBlank())
-                        .count();
-        int reactionCount = p.getReactions() == null ? 0 : p.getReactions().size();
+        int commentCount = p.getCommentCount();
+        int reactionCount = p.getReactionCount();
 
         var dto = ScoredPostDTO.builder().postId(p.getId()).eventId(p.getEvent() == null ? null : p.getEvent().getId())
                 .eventTitle(p.getEvent() == null ? "" : p.getEvent().getTitle())
@@ -175,6 +187,87 @@ public class PostServiceImpl implements PostService {
             // ignore
         }
         return dto;
+    }
+
+    @Override
+    public ScoredPostDTO createPost(CreatePostRequest request, UUID authorId) {
+        // Get event
+        Event event = eventRepository.findById(request.getEventId())
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        // Get author
+        User author = userRepository.findById(authorId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Create post
+        Post post = new Post();
+        post.setEvent(event);
+        post.setAuthor(author);
+        post.setContent(request.getContent());
+
+        // Save to database
+        Post savedPost = postRepository.save(post);
+
+        // Add to ranking
+        postRankingService.addOrUpdatePostRanking(savedPost.getId().toString(),
+                scoringService.computeTotalScore(savedPost));
+
+        // Return DTO
+        return mapToDTO(savedPost, null, Optional.of(author));
+    }
+
+    @Override
+    public PostDetailResponse getPostDetail(UUID postId, UUID viewerId) {
+        // Get post with author and event
+        Post post = postRepository.findByIdWithAuthorAndEvent(postId);
+        if (post == null) {
+            throw new RuntimeException("Post not found");
+        }
+
+        // Check visibility
+        if (viewerId != null && !isVisibleToUser(post, viewerId)) {
+            throw new RuntimeException("Post not visible to user");
+        }
+
+        // Count reactions
+        int reactionCount = postReactionRepository.countByPostId(postId);
+
+        // Check if liked by viewer
+        boolean isLikedByViewer = false;
+        if (viewerId != null) {
+            isLikedByViewer = postReactionRepository.existsByPostIdAndUserId(postId, viewerId);
+        }
+
+        // Build response
+        PostDetailResponse response = PostDetailResponse.builder()
+                .postId(post.getId())
+                .eventId(post.getEvent() == null ? null : post.getEvent().getId())
+                .eventTitle(post.getEvent() == null ? "" : post.getEvent().getTitle())
+                .content(post.getContent())
+                .createdAt(post.getCreatedAt())
+                .updatedAt(post.getUpdatedAt())
+                .reactionCount(reactionCount)
+                .isLikedByViewer(isLikedByViewer)
+                .build();
+
+        // Add author info
+        if (post.getAuthor() != null) {
+            response.setAuthor(new AuthorSummaryDTO(
+                    post.getAuthor().getId(),
+                    post.getAuthor().getName(),
+                    null));
+        }
+
+        // Add event info
+        if (post.getEvent() != null) {
+            response.setEvent(new EventSummaryDTO(
+                    post.getEvent().getId(),
+                    post.getEvent().getTitle(),
+                    post.getEvent().getLocation(),
+                    post.getEvent().getStartTime()));
+        }
+
+        return response;
     }
 
 }

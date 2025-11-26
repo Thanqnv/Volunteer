@@ -17,4 +17,9 @@ public interface PostReactionRepository extends JpaRepository<PostReaction, UUID
 
     @Query("SELECT COUNT(r) FROM PostReaction r WHERE r.post.id = :postId AND r.user.id = :userId AND r.comment IS NOT NULL")
     long countCommentsByPostAndUser(@Param("postId") UUID postId, @Param("userId") UUID userId);
+
+    @Query("SELECT COUNT(r) FROM PostReaction r WHERE r.post.id = :postId")
+    int countByPostId(@Param("postId") UUID postId);
+
+    boolean existsByPostIdAndUserId(UUID postId, UUID userId);
 }

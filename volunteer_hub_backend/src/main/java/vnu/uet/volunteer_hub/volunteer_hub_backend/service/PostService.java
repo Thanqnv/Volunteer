@@ -4,8 +4,14 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreatePostRequest;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.PostDetailResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ScoredPostDTO;
 
 public interface PostService {
     Page<ScoredPostDTO> getVisiblePosts(UUID viewerId, int page, int size);
+
+    ScoredPostDTO createPost(CreatePostRequest request, UUID authorId);
+
+    PostDetailResponse getPostDetail(UUID postId, UUID viewerId);
 }

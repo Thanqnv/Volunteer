@@ -61,4 +61,9 @@ public class EventServiceImpl implements EventService {
         return eventRepository.findAll();
     }
 
+    @Override
+    public List<Event> getApprovedEvents() {
+        return eventRepository.findAllByAdminApprovalStatusAndIsArchived(EventApprovalStatus.APPROVED, Boolean.FALSE);
+    }
+
 }

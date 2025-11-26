@@ -64,6 +64,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User findByEmail(String email) {
+        return userRepository.findByEmailIgnoreCaseWithRoleOptional(email).orElse(null);
+    }
+
+    @Override
     public void updatePassword(String email, String newPassword) {
         try {
             logger.debug("Attempting to update password for email: {}", email);
@@ -102,7 +107,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UUID getViewerIdFromAuthentication(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated() || auth.getName() == null) {
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof UUID) {
+            return (UUID) principal;
+        }
+
+        if (auth.getName() == null) {
             return null;
         }
         return userRepository.findByEmailIgnoreCase(auth.getName())

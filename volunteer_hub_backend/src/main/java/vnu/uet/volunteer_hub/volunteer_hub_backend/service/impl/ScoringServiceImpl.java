@@ -8,9 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Post;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.PostReaction;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.ReactionType;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.PostReactionRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RegistrationRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.ScoringService;
@@ -33,24 +31,13 @@ public class ScoringServiceImpl implements ScoringService {
      * - Visits (estimated from reactions): reactions × 3
      */
     public double computeAffinityScore(Post post) {
-        if (post == null || post.getReactions() == null) {
+        if (post == null) {
             return 0.0;
         }
 
-        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        long recentInteractions = post.getReactions().stream()
-                .filter(r -> r.getCreatedAt() != null && r.getCreatedAt().isAfter(thirtyDaysAgo))
-                .count();
-
-        long commentCount = post.getReactions().stream()
-                .filter(r -> r.getCreatedAt() != null && r.getCreatedAt().isAfter(thirtyDaysAgo)
-                        && r.getComment() != null && !r.getComment().isBlank())
-                .count();
-
-        long likeCount = post.getReactions().stream()
-                .filter(r -> r.getCreatedAt() != null && r.getCreatedAt().isAfter(thirtyDaysAgo)
-                        && (r.getReactionType() == ReactionType.LIKE || r.getReactionType() == ReactionType.LOVE))
-                .count();
+        long recentInteractions = post.getRecentReactionCount();
+        long commentCount = post.getRecentCommentCount();
+        long likeCount = post.getRecentLikeCount();
 
         return (commentCount * 5.0) + (likeCount * 2.0) + (recentInteractions * 3.0);
     }
@@ -137,21 +124,9 @@ public class ScoringServiceImpl implements ScoringService {
     }
 
     private double computeAverageEdgeWeight(Post post) {
-        if (post == null || post.getReactions() == null || post.getReactions().isEmpty()) {
+        if (post == null) {
             return 5.0; // Default: like/react weight
         }
-
-        double totalWeight = 0.0;
-        for (PostReaction reaction : post.getReactions()) {
-            if (reaction.getComment() != null && !reaction.getComment().isBlank()) {
-                totalWeight += 10.0; // Comment weight
-            } else if (reaction.getReactionType() == ReactionType.LIKE
-                    || reaction.getReactionType() == ReactionType.LOVE) {
-                totalWeight += 5.0; // Like/React weight
-            } else {
-                totalWeight += 8.0; // Share/other default to 8
-            }
-        }
-        return totalWeight / post.getReactions().size();
+        return post.getAverageEdgeWeight();
     }
 }

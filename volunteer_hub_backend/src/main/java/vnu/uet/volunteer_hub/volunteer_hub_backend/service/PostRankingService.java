@@ -20,4 +20,6 @@ public interface PostRankingService {
     List<String> getRangeIds(int start, int end);
 
     void rebuildRankingFromDatabase();
+
+    void addOrUpdatePostRanking(String postId, double score);
 }

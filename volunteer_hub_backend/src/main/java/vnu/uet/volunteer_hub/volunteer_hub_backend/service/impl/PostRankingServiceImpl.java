@@ -194,4 +194,9 @@ public class PostRankingServiceImpl implements PostRankingService {
         redisTemplate.delete(rankingKey);
         refreshAllScoresToZSet();
     }
+
+    @Override
+    public void addOrUpdatePostRanking(String postId, double score) {
+        redisTemplate.opsForZSet().add(rankingKey, postId, score);
+    }
 }

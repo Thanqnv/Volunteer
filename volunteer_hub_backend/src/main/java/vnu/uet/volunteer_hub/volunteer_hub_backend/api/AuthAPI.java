@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -22,7 +23,10 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.ForgotPasswordReq
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.RegistrationRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.ResetPasswordRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.LoginRequest;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.LoginResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ResponseDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.utils.JwtUtil;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.utils.TokenUtil;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EmailService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.RateLimitService;
@@ -36,10 +40,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 /**
  * REST API endpoints cho authentication và password recovery.
  * Security improvements:
+ * - JWT-based stateless authentication
  * - Không tiết lộ thông tin user enumeration
  * - Sử dụng secure random token thay vì mã số ngắn
  * - Async email sending để không block request
- * - Stateless password reset (không dùng session)
  * - Single-use tokens với TTL
  * - Rate limiting để chống abuse
  */
@@ -52,15 +56,20 @@ public class AuthAPI {
     private final RecoveryCodeService recoveryCodeService;
     private final RateLimitService rateLimitService;
     private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+
+    @Value("${jwt.expiration-ms}")
+    private long jwtExpirationMs;
 
     public AuthAPI(UserService userService, EmailService emailService,
             RecoveryCodeService recoveryCodeService, RateLimitService rateLimitService,
-            AuthenticationManager authenticationManager) {
+            AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
         this.userService = userService;
         this.emailService = emailService;
         this.recoveryCodeService = recoveryCodeService;
         this.rateLimitService = rateLimitService;
         this.authenticationManager = authenticationManager;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
@@ -103,15 +112,50 @@ public class AuthAPI {
             return errorResponse;
 
         try {
+            // Authenticate user với Spring Security
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            ResponseDTO<Void> successResponse = ResponseDTO.<Void>builder()
-                    .message("Login successful")
+            // Lấy user details sau khi authenticate thành công
+            User user = userService.findByEmail(request.getEmail());
+            if (user == null) {
+                throw new RuntimeException("User not found after authentication");
+            }
+
+            // Lấy role (lấy role đầu tiên nếu có nhiều roles)
+            String role = user.getRoles().stream()
+                    .findFirst()
+                    .map(r -> r.getRoleName())
+                    .orElse("VOLUNTEER");
+
+            // Generate JWT token
+            String token = jwtUtil.generateToken(
+                    user.getId().toString(),
+                    user.getEmail(),
+                    role);
+
+            logger.info("✅ User logged in successfully: {}", user.getEmail());
+
+            // Build response với token
+            LoginResponse loginResponse = LoginResponse.builder()
+                    .accessToken(token)
+                    .tokenType("Bearer")
+                    .expiresIn(jwtExpirationMs)
+                    .userId(user.getId().toString())
+                    .email(user.getEmail())
+                    .role(role)
+                    .displayName(user.getName())
                     .build();
+
+            ResponseDTO<LoginResponse> successResponse = ResponseDTO.<LoginResponse>builder()
+                    .message("Login successful")
+                    .data(loginResponse)
+                    .build();
+
             return ResponseEntity.ok(successResponse);
+
         } catch (Exception e) {
+            logger.warn("❌ Login failed for email: {}", request.getEmail());
             ResponseDTO<Void> errorResponse1 = ResponseDTO.<Void>builder()
                     .message("Invalid email or password")
                     .build();
@@ -278,6 +322,11 @@ public class AuthAPI {
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        // Với JWT stateless, logout được xử lý ở client side
+        // Client chỉ cần xóa token khỏi storage
+        // Server-side logout có thể implement blacklist token nếu cần (sử dụng Redis)
+
+        // Xóa session nếu có (cho backwards compatibility)
         try {
             if (request.getSession(false) != null) {
                 request.getSession(false).invalidate();
@@ -290,7 +339,7 @@ public class AuthAPI {
             response.addCookie(cookie);
 
             ResponseDTO<Void> success = ResponseDTO.<Void>builder()
-                    .message("Logout successful")
+                    .message("Logout successful. Please remove the JWT token from client storage.")
                     .build();
             return ResponseEntity.ok(success);
         } catch (Exception e) {
@@ -313,13 +362,25 @@ public class AuthAPI {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(unauthorized);
             }
 
-            // Build minimal safe user info
+            // Build user info từ JWT authentication
             java.util.Map<String, Object> info = new java.util.HashMap<>();
-            info.put("email", auth.getName());
-            java.util.UUID id = userService.getViewerIdFromAuthentication(auth);
-            info.put("id", id);
+
+            // Principal là UUID (được set trong JwtAuthenticationFilter)
+            Object principal = auth.getPrincipal();
+            if (principal instanceof java.util.UUID) {
+                info.put("id", principal.toString());
+            } else {
+                // Fallback cho session-based auth hoặc OAuth
+                java.util.UUID id = userService.getViewerIdFromAuthentication(auth);
+                info.put("id", id != null ? id.toString() : null);
+            }
+
+            // Roles từ authorities
             info.put("roles", auth.getAuthorities().stream()
                     .map(a -> a.getAuthority()).toList());
+
+            // Nếu cần thêm thông tin chi tiết, có thể load từ database
+            // Nhưng để giảm database calls, chỉ trả về thông tin từ token
 
             ResponseDTO<java.util.Map<String, Object>> resp = ResponseDTO.<java.util.Map<String, Object>>builder()
                     .message("Current user retrieved")
