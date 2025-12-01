@@ -64,15 +64,15 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponse updateComment(UUID commentId, UpdateCommentRequest request) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = userService.getViewerIdFromAuthentication(auth);
+        // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        // UUID userId = userService.getViewerIdFromAuthentication(auth);
 
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
-        if (!comment.getUser().getId().equals(userId)) {
-            throw new RuntimeException("You are not authorized to update this comment");
-        }
+        // if (!comment.getUser().getId().equals(userId)) {
+        // throw new RuntimeException("You are not authorized to update this comment");
+        // }
 
         comment.setContent(request.getContent());
         Comment updatedComment = commentRepository.save(comment);

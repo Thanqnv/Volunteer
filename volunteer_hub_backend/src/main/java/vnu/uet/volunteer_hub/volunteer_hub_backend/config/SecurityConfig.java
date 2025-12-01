@@ -2,6 +2,7 @@ package vnu.uet.volunteer_hub.volunteer_hub_backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -12,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -51,13 +53,15 @@ public class SecurityConfig {
                                 "/api/posts/visible",
                                 "/api/posts/{postId}",
                                 "/api/posts",
+                                "/api/posts/**",
+                                "/api/comments/**",
                                 "/api/users/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**")
                         .permitAll()
                         // GET /api/posts - cho phép anonymous nhưng có thêm info nếu
                         // authenticated
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/posts")
+                        .requestMatchers(HttpMethod.GET, "/api/posts")
                         .permitAll()
                         // Admin endpoints - yêu cầu role ADMIN
                         .requestMatchers("/api/admin/**").permitAll()
