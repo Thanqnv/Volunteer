@@ -19,36 +19,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import jakarta.servlet.http.HttpServletResponse;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.service.impl.CustomOAuth2UserService;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.service.impl.CustomUserDetailService;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
-    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final CustomUserDetailService customUserDetailService;
-
-    @Value("${app.oauth2.success-redirect-url:http://localhost:3000/oauth/callback}")
-    private String oauth2SuccessRedirectUrl;
-
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-            CustomOAuth2UserService customOAuth2UserService,
-            JwtTokenProvider jwtTokenProvider,
-            CustomUserDetailService customUserDetailService) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.customOAuth2UserService = customOAuth2UserService;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.customUserDetailService = customUserDetailService;
-    }
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -60,55 +42,56 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(12);
     }
 
-    private CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowCredentials(true);
-        configuration.addAllowedOrigin("http://localhost:3000");
-        configuration.addAllowedOrigin("http://127.0.0.1:3000");
-        configuration.addAllowedHeader("*");
-        configuration.addAllowedMethod("*");
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                // Stateless session - không lưu session trên server
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/oauth2/**").permitAll()
-                        .requestMatchers("/login/**").permitAll()
-                        .requestMatchers("/login/oauth2/**").permitAll()
-                        .requestMatchers("/oauth2/authorization/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/posts/visible").permitAll()
+                        // Public endpoints - không cần authentication
+                        .requestMatchers(
+                                "/ui/**",
+                                "/api/auth/**",
+                                "/api/dashboard/**",
+                                "/api/events",
+                                "/api/posts/visible",
+                                "/api/posts/{postId}",
+                                "/api/posts",
+                                "/api/posts/**",
+                                "/api/comments/**",
+                                "/api/users/**",
+                                "/oauth2/**",
+                                "/login/oauth2/**")
+                        .permitAll()
+                        // GET /api/posts - cho phép anonymous nhưng có thêm info nếu
+                        // authenticated
+                        .requestMatchers(HttpMethod.GET, "/api/posts")
+                        .permitAll()
+                        // Admin endpoints - yêu cầu role ADMIN
+                        .requestMatchers("/api/admin/**").permitAll()
+                        // .hasRole("ADMIN")
+                        // Tất cả các request khác cần authenticated (bao gồm POST /api/posts)
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.getWriter().write(
-                                    "{\"data\":null,\"message\":\"Unauthorized\",\"detail\":\"Authentication required\"}");
+                                    "{\"data\":null,\"message\":\"Unauthorized\",\"detail\":\"Authentication required. Please provide a valid JWT token in the Authorization header.\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write(
+                                    "{\"data\":null,\"message\":\"Forbidden\",\"detail\":\"You don't have permission to access this resource.\"}");
                         }))
+                // Thêm JWT filter trước UsernamePasswordAuthenticationFilter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler((request, response, authentication) -> {
-                            String username = authentication.getName();
-                            var userDetails = customUserDetailService.loadUserByUsername(username);
-                            String token = jwtTokenProvider.generateToken(userDetails);
-
-                            String target = oauth2SuccessRedirectUrl
-                                    + "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
-
-                            logger.info("OAuth2 login success for user={}, redirecting to {}", username, target);
-                            response.sendRedirect(target);
-                        }));
-
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        .successHandler(oAuth2AuthenticationSuccessHandler));
 
         return http.build();
     }

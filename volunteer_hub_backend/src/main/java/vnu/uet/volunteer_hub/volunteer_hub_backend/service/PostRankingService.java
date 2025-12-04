@@ -20,4 +20,14 @@ public interface PostRankingService {
     List<String> getRangeIds(int start, int end);
 
     void rebuildRankingFromDatabase();
+
+    void addOrUpdatePostRanking(String postId, double score);
+
+    /**
+     * Remove a post from the ranking ZSET.
+     * Called when a post is deleted.
+     * 
+     * @param postId the post ID to remove
+     */
+    void removePostRanking(String postId);
 }

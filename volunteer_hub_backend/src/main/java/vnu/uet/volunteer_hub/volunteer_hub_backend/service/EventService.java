@@ -12,4 +12,6 @@ public interface EventService {
     void deleteEvent(UUID id);
 
     List<Event> getAllEvents();
+
+    List<Event> getApprovedEvents();
 }
