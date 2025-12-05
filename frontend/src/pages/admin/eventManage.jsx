@@ -1,111 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Search } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "@/hooks/use-toast"
-
-import { useRouter } from "next/router"
+import { useAdminEvents } from "@/hooks/useAdminEvents"
 
 export default function EventsManagement() {
-  const router = useRouter()
-
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push('/admin')
-    } else {
-      getAllEvents()
-    }
-  }, [router])
-
-  const [events, setEvents] = useState([])
+  const { events, removeEvent } = useAdminEvents()
   const [searchQuery, setSearchQuery] = useState("")
-
-  const parseMaybeTimestamp = (value) => {
-    if (!value) return null
-    if (typeof value === 'string' || typeof value === 'number') return new Date(value)
-    // Firestore Timestamp-like { seconds, nanoseconds }
-    if (value.seconds) return new Date(value.seconds * 1000)
-    // Date-like string field
-    return new Date(value)
-  }
-
-  const getAllEvents = async () => {
-    const getAllEventsApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/event/all`
-
-    try {
-      const response = await fetch(getAllEventsApi, {
-        method: "GET",
-        headers: {
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-      })
-      if (!response.ok) {
-        throw new Error("Send request failed")
-      }
-      const res = await response.json()
-      const serverEvents = res?.data?.events || res?.events || []
-      setEvents(serverEvents.map(e => {
-        return {
-          event_id: e.event_id || e.id,
-          created_by_user_id: e.created_by_user_id,
-          title: e.title,
-          description: e.description,
-          location: e.location,
-          start_time: parseMaybeTimestamp(e.start_time),
-          end_time: parseMaybeTimestamp(e.end_time),
-          max_volunteers: e.max_volunteers,
-          admin_approval_status: e.admin_approval_status || 'Pending',
-          is_archived: !!e.is_archived,
-          created_at: parseMaybeTimestamp(e.created_at),
-        }
-      }))
-    } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách sự kiện. Vui lòng thử lại.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleRemove = async (eventId) => {
-    const previous = events
-    setEvents(events.filter(ev => ev.event_id !== eventId))
-    const deleteEventApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/event/`
-
-    try {
-      const response = await fetch(deleteEventApi +
-        new URLSearchParams({
-          "id": eventId,
-        }).toString(), {
-        method: "DELETE",
-        headers: {
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-      })
-      if (!response.ok) {
-        throw new Error("Send request failed")
-      }
-      toast({
-        title: "Thông báo",
-        description: "Sự kiện đã được xóa thành công.",
-      })
-    } catch (error) {
-      setEvents(previous)
-      toast({
-        title: "Xóa sự kiện không thành công",
-        description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng thử lại.",
-        variant: "destructive"
-      })
-    }
-  }
 
   const renderStatus = (status, isArchived) => {
     if (isArchived) return <Badge className="bg-gray-400 hover:bg-gray-400 text-black">Đã lưu trữ</Badge>
@@ -176,7 +81,7 @@ export default function EventsManagement() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => handleRemove(ev.event_id)}
+                      onClick={() => removeEvent(ev.event_id)}
                       className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 h-7"
                     >
                       Xóa

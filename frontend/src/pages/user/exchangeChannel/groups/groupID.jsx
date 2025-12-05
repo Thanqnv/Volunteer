@@ -1,8 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/router";
 import { get } from "rc-util";
-import { get } from "rc-util";
-
 export default async function GroupDetail() {
   const router = useRouter();
   const { groupId } = router.query;

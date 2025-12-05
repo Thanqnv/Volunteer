@@ -3,9 +3,7 @@
 import { Plane, Users, RefreshCw, TrendingUp, Calendar, Eye, Lock, UserPlus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Legend, LineChart, Line, Tooltip, AreaChart, Area } from 'recharts'
-import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
-import { toast } from '@/hooks/use-toast'
+import { useStatistics } from '@/hooks/useStatistics'
 
 const chartData = [
   { month: "January", pageViews: 3200, orders: 2400, desktop: 73 },
@@ -42,42 +40,7 @@ const aircraftData = [
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
 
 export default function Dashboard() {
-  const router = useRouter()
-  const [data, setData] = useState({
-    "flights": 0,
-    "tickets": 0,
-    "revenue": 0
-  })
-
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push('/admin')
-    }
-    getStatistic()
-  }, [router])
-
-  const getStatistic = async () => {
-    const getStatisticApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/statistic`
-
-    try {
-      const response = await fetch(getStatisticApi, {
-        method: "GET",
-      })
-      if (!response.ok) {
-        throw new Error("Send request failed")
-      }
-
-      const res = await response.json()
-      setData(res.data)
-    } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
-        variant: "destructive"
-      })
-    }
-  }
+  const { data } = useStatistics()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6 lg:p-8">
