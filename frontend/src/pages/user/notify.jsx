@@ -14,7 +14,7 @@ export default function NotifyPage() {
     } = useNotifications();
 
     return (
-        <div className="container mx-auto pt-10 pl-64 space-y-6">
+        <div className="container mx-auto pt-10 pl-8 space-y-6">
             <div className="p-6">
                 <h1 className="text-2xl font-bold mb-6">Thông báo</h1>
                 <AnnounceDetail
