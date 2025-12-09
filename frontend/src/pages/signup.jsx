@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSignup } from '@/hooks/useSignupForm'; 
+import { useSignup } from '@/hooks/useSignupForm';
 
 const ErrorMessage = ({ message }) => (
   <p className="text-red-600 text-center">{message}</p>
@@ -27,7 +27,7 @@ export default function SignupForm() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen bg-cover bg-center"
+      className="flex items-center justify-center min-h-screen bg-cover bg-center pt-16"
       style={{
         backgroundImage: "url('/clouds-background.jpg')",
       }}
@@ -125,6 +125,16 @@ export default function SignupForm() {
                 </button>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                Role
+              </Label>
+              <select id="role" name="role" className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500">
+                <option value="volunteer">Tình nguyện viên</option>
+                <option value="manager">Quản lý</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
             <Button
               type="submit"
               className="w-full bg-green-500 hover:bg-[#d55643] text-white"
@@ -140,16 +150,16 @@ export default function SignupForm() {
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-white px-2 text-muted-foreground">hoặc</span>
             </div>
-            </div>
-              <Button
-               variant="outline"
-               type="button"
-               className="w-full"
-               onClick={() => {
-                console.log("Google sign-in clicked");
-              }}
-              >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+          </div>
+          <Button
+            variant="outline"
+            type="button"
+            className="w-full"
+            onClick={() => {
+              console.log("Google sign-in clicked");
+            }}
+          >
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -166,8 +176,8 @@ export default function SignupForm() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 fill="#EA4335"
               />
-              </svg>
-               Đăng nhập với Google
+            </svg>
+            Đăng nhập với Google
           </Button>
         </CardContent>
         <div className="px-6 py-4 bg-gray-50 rounded-b-lg">

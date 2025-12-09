@@ -1,28 +1,19 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useRouter } from 'next/router'
+import { useManagerLogin } from '@/hooks/useManagerLogin'
 
 export default function ManagerLogin() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-  const [formData, setFormData] = useState({ email: '', password: '' })
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    // Mock login for manager
-    const mockToken = 'mock-manager-token'
-    localStorage.setItem('token', mockToken)
-    router.push('/manager/dashboard')
-  }
+  const {
+    showPassword,
+    setShowPassword,
+    formData,
+    handleInputChange,
+    handleSubmit,
+  } = useManagerLogin();
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('/clouds-background.jpg')" }}>

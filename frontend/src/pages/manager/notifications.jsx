@@ -40,11 +40,10 @@ const NotificationCard = ({ icon: Icon, notification, onMarkRead }) => {
   return (
     <div
       onClick={() => onMarkRead(notification.id)}
-      className={`relative cursor-pointer rounded-xl border transition-all duration-200 hover:shadow-md ${
-        notification.unread
+      className={`relative cursor-pointer rounded-xl border transition-all duration-200 hover:shadow-md ${notification.unread
           ? "border-emerald-100 bg-emerald-50/70"
           : "border-slate-100 bg-white/70 opacity-90"
-      } p-4`}
+        } p-4`}
     >
       <div className="flex gap-4">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${tone.icon}`}>
@@ -54,9 +53,8 @@ const NotificationCard = ({ icon: Icon, notification, onMarkRead }) => {
         <div className="flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3
-              className={`text-sm ${
-                notification.unread ? "font-semibold text-slate-900" : "font-medium text-slate-700"
-              }`}
+              className={`text-sm ${notification.unread ? "font-semibold text-slate-900" : "font-medium text-slate-700"
+                }`}
             >
               {notification.title}
             </h3>
@@ -64,9 +62,8 @@ const NotificationCard = ({ icon: Icon, notification, onMarkRead }) => {
           </div>
 
           <p
-            className={`mt-1 text-sm ${
-              notification.unread ? "text-slate-700" : "text-slate-500"
-            }`}
+            className={`mt-1 text-sm ${notification.unread ? "text-slate-700" : "text-slate-500"
+              }`}
           >
             {notification.body}
           </p>
@@ -101,57 +98,13 @@ const NotificationCard = ({ icon: Icon, notification, onMarkRead }) => {
 // =========================
 // MAIN PAGE
 // =========================
+import { useManagerNotifications } from "@/hooks/useManagerNotifications";
+
 export default function ManagerNotificationsPage() {
-  const MANAGER_ID = "manager-demo-001"
-  const STORAGE_KEY = `notif_read_${MANAGER_ID}`
+  const { notifications, loading, markAsRead, markAllAsRead } = useManagerNotifications();
 
-  const seed = useMemo(() => [
-    { id: "1", title: 'Dự án "Trồng cây ven sông" đã được duyệt', body: "Admin Lê Thu Hà đã duyệt bản kế hoạch cập nhật.", time: "2 giờ trước", status: "approved" },
-    { id: "2", title: 'Dự án "Không đồng hành một mình" bị gỡ', body: "Thiếu báo cáo ngân sách tháng 10. Nộp bổ sung trước 12/11.", time: "5 giờ trước", status: "removed", requiresAction: true, sla: "12h" },
-    { id: "3", title: 'Tạo sự kiện "Tập huấn sơ cứu" thành công', body: "Lịch gửi email tuyển tình nguyện viên đã mở.", time: "Hôm nay, 09:15", status: "success" },
-    { id: "4", title: "Thành viên mới xin tham gia dự án", body: "Trần Đức Long muốn tham gia dự án “Bếp ấm đêm đông”.", time: "10 phút trước", status: "pending", requiresAction: true, sla: "6h" },
-    { id: "5", title: 'Nhắc lịch: "Phiên chợ 0 đồng" sáng mai', body: "Kiểm tra lại danh sách quà tặng và phân công nhóm hậu cần.", time: "Ngày mai • 06:00", status: "warning", requiresAction: true },
-    { id: "6", title: 'Sự kiện "Dọn rác Hồ Tây" sắp diễn ra', body: "Cần chốt phương án vận chuyển dụng cụ.", time: "12/11/2025 • 07:30", status: "upcoming", requiresAction: true },
-    { id: "7", title: 'Sự kiện "Dạy STEM cho trẻ" đã kết thúc', body: "Hoàn thiện báo cáo trong 3 ngày để nhận ngân sách đợt tiếp.", time: "08/11/2025 • 18:00", status: "completed" },
-    { id: "8", title: "Nhắc nhở nộp biên bản họp tháng", body: "Hạn nộp 17:00 hôm nay.", time: "1 giờ trước", status: "warning", requiresAction: true, sla: "6h" },
-    { id: "9", title: "Checklist hậu cần đã đạt 80%", body: "Cần bổ sung phương án dự phòng thời tiết.", time: "Hôm qua, 20:45", status: "success" },
-  ], [])
-
-  // ⚙️ Bước 1: render giống server (tránh hydration mismatch)
-  const [notifications, setNotifications] = useState(() =>
-    seed.map((n) => ({ ...n, unread: true }))
-  )
-
-  // ⚙️ Bước 2: sau khi mount thì đồng bộ localStorage
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")
-      const readSet = new Set(stored)
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, unread: !readSet.has(n.id) }))
-      )
-    } catch (e) {
-      console.warn("localStorage error:", e)
-    }
-  }, [])
-
-  // ⚙️ Logic đánh dấu đọc
-  const markAsRead = (id) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)))
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")
-      if (!stored.includes(id)) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([...stored, id]))
-      }
-    } catch {}
-  }
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))
-    try {
-      const allIds = notifications.map((n) => n.id)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(allIds))
-    } catch {}
+  if (loading) {
+    return <div className="p-10 text-center">Đang tải thông báo...</div>;
   }
 
   return (
@@ -191,13 +144,13 @@ export default function ManagerNotificationsPage() {
                 key={n.id}
                 icon={
                   n.status === "approved" ? ShieldCheck :
-                  n.status === "removed" ? AlertTriangle :
-                  n.status === "success" ? CalendarPlus :
-                  n.status === "pending" ? UsersRound :
-                  n.status === "warning" ? AlertTriangle :
-                  n.status === "upcoming" ? CalendarClock :
-                  n.status === "completed" ? PartyPopper :
-                  CheckCircle2
+                    n.status === "removed" ? AlertTriangle :
+                      n.status === "success" ? CalendarPlus :
+                        n.status === "pending" ? UsersRound :
+                          n.status === "warning" ? AlertTriangle :
+                            n.status === "upcoming" ? CalendarClock :
+                              n.status === "completed" ? PartyPopper :
+                                CheckCircle2
                 }
                 notification={n}
                 onMarkRead={markAsRead}
@@ -209,3 +162,4 @@ export default function ManagerNotificationsPage() {
     </div>
   )
 }
+

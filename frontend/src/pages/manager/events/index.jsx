@@ -7,33 +7,7 @@ import ManagerEventCard from "@/components/manager/ManagerEventCard";
 import CreateEventModal from "@/components/manager/CreateEventModal";
 import Tabs from "@/components/common/Tabs";
 import SimpleAlert from "@/components/ui/SimpleAlert";
-
-const managedSeed = [
-  {
-    title: "2026 Schwarz Park Maintenance Volunteer",
-    location: "Dorena Lake, Oregon",
-    date: "2026-04-01 - 2026-09-30",
-    img: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=80",
-    status: "approved",
-  },
-  {
-    title: "Community Tree Planting",
-    location: "Hà Nội, Việt Nam",
-    date: "2026-04-24 - 2026-10-01",
-    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdp4H-EXyavAgCcgpheUMGYjpdkGjfSMjfFA&s",
-    status: "approved",
-  },
-];
-
-const pendingSeed = [
-  {
-    title: "Clean City Campaign",
-    location: "TP. Hồ Chí Minh, Việt Nam",
-    date: "2026-05-06 - 2026-05-10",
-    img: "https://en-cdn.nhandan.vn/images/690c590d50fc5d3afa89e2f20ddc864a03eef7b60560d70ed04a42615367b47681764174b35edea27af880c27a9f0fa2/bm1.jpg",
-    status: "pending",
-  },
-];
+import { useManagerEvents } from "@/hooks/useManagerEvents";
 
 const tabs = [
   { key: "managed", label: "Dự án do bạn quản lý" },
@@ -42,11 +16,18 @@ const tabs = [
 
 export default function EventsIndexPage() {
   const router = useRouter();
+  const {
+    managedEvents,
+    pendingEvents,
+    loading,
+    alert,
+    handleDelete,
+    handleSaveEvent,
+    closeAlert,
+  } = useManagerEvents();
+
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState("managed");
-  const [alert, setAlert] = useState(null);
-  const [managedEvents, setManagedEvents] = useState(managedSeed);
-  const [pendingEvents, setPendingEvents] = useState(pendingSeed);
   const [editingContext, setEditingContext] = useState(null);
 
   const displayedEvents =
@@ -56,55 +37,21 @@ export default function EventsIndexPage() {
     editingContext && editingContext.tab === "managed"
       ? managedEvents[editingContext.index]
       : editingContext
-      ? pendingEvents[editingContext.index]
-      : null;
+        ? pendingEvents[editingContext.index]
+        : null;
 
-  const handleDelete = (tab, index) => {
-    if (!window.confirm("Bạn có chắc muốn xóa dự án này?")) return;
-    if (tab === "managed") {
-      setManagedEvents((prev) => prev.filter((_, i) => i !== index));
-    } else {
-      setPendingEvents((prev) => prev.filter((_, i) => i !== index));
-    }
-    setAlert({ type: "success", message: "Dự án đã được xóa." });
-  };
-
-  const handleEdit = (tab, index) => {
+  const onEdit = (tab, index) => {
     setEditingContext({ tab, index });
     setShowModal(true);
   };
 
-  const handleSaveEvent = (newEvent) => {
+  const onSave = (newEvent) => {
+    handleSaveEvent(newEvent, editingContext);
     if (editingContext) {
-      if (editingContext.tab === "managed") {
-        setManagedEvents((prev) =>
-          prev.map((evt, i) =>
-            i === editingContext.index
-              ? { ...evt, ...newEvent, status: evt.status }
-              : evt
-          )
-        );
-      } else {
-        setPendingEvents((prev) =>
-          prev.map((evt, i) =>
-            i === editingContext.index
-              ? { ...evt, ...newEvent, status: evt.status }
-              : evt
-          )
-        );
-      }
-
-      setAlert({ type: "success", message: "Cập nhật dự án thành công!" });
       setActiveTab(editingContext.tab);
     } else {
-      setPendingEvents((prev) => [newEvent, ...prev]);
       setActiveTab("pending");
-      setAlert({
-        type: "success",
-        message: "Tạo dự án mới thành công! Dự án đang chờ duyệt.",
-      });
     }
-
     setShowModal(false);
     setEditingContext(null);
   };
@@ -122,7 +69,7 @@ export default function EventsIndexPage() {
           label: "Sửa",
           icon: Pencil,
           className: "text-[#F2994A]",
-          onClick: () => handleEdit("managed", index),
+          onClick: () => onEdit("managed", index),
         },
         {
           label: "Xóa",
@@ -138,7 +85,7 @@ export default function EventsIndexPage() {
         label: "Sửa",
         icon: Pencil,
         className: "text-[#F2994A]",
-        onClick: () => handleEdit("pending", index),
+        onClick: () => onEdit("pending", index),
       },
       {
         label: "Xóa",
@@ -148,6 +95,10 @@ export default function EventsIndexPage() {
       },
     ];
   };
+
+  if (loading) {
+    return <div className="p-8 text-center">Đang tải danh sách dự án...</div>;
+  }
 
   return (
     <div className="bg-gray-100 min-h-screen w-screen overflow-hidden">
@@ -227,7 +178,7 @@ export default function EventsIndexPage() {
             setShowModal(false);
             setEditingContext(null);
           }}
-          onSave={handleSaveEvent}
+          onSave={onSave}
           initialData={editingEvent}
         />
       )}
@@ -237,7 +188,7 @@ export default function EventsIndexPage() {
         <SimpleAlert
           type={alert.type}
           message={alert.message}
-          onClose={() => setAlert(null)}
+          onClose={closeAlert}
         />
       )}
     </div>

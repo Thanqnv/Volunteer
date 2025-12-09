@@ -81,6 +81,15 @@ export default function LoginForm() {
                 </button>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                Lựa chọn vai trò đăng nhập
+              </Label>
+              <select id="role" name="role" className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500">
+                <option value="volunteer">Tình nguyện viên</option>
+                <option value="manager">Quản lý</option>
+              </select>
+            </div>
             <Button
               type="submit"
               className="w-full bg-green-500 hover:bg-[#d55643] text-white"

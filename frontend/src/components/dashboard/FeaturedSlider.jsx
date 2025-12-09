@@ -20,12 +20,12 @@ const FeaturedSlider = ({ events, onRegister, onCancel, onClick }) => {
     if (!events || events.length === 0) return null;
 
     return (
-        <div className="relative group mb-12">
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                    Sự kiện nổi bật <span className="text-xl">🔥</span>
+        <div className="relative group mb-8 sm:mb-12">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                    Sự kiện nổi bật <span className="text-lg sm:text-xl">🔥</span>
                 </h2>
-                <div className="flex gap-2">
+                <div className="hidden sm:flex gap-2">
                     <button
                         onClick={() => scroll('left')}
                         className="p-2 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
@@ -43,13 +43,13 @@ const FeaturedSlider = ({ events, onRegister, onCancel, onClick }) => {
 
             <div
                 ref={scrollRef}
-                className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory"
+                className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 sm:pb-8 -mx-2 sm:-mx-4 px-2 sm:px-4 scrollbar-hide snap-x snap-mandatory"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {events.map((event, index) => (
                     <motion.div
                         key={event.event_id}
-                        className="min-w-[300px] md:min-w-[350px] snap-center"
+                        className="min-w-[85vw] sm:min-w-[320px] md:min-w-[350px] snap-center"
                         initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}

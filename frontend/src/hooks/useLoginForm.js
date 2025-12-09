@@ -1,16 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useForm } from "@/hooks/useForm";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 export const useLogin = (onSuccess) => {
   const { login } = useAuth(); // Lấy hàm login từ AuthContext
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const { formData, handleInputChange } = useForm({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

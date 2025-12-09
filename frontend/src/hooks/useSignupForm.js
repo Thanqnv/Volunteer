@@ -1,8 +1,9 @@
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useForm } from "@/hooks/useForm";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 export const useSignup = (onSuccess) => {
-  const [formData, setFormData] = useState({
+  const { formData, handleInputChange } = useForm({
     firstName: '',
     lastName: '',
     email: '',
@@ -10,11 +11,6 @@ export const useSignup = (onSuccess) => {
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import {
   Card,
   CardContent,
@@ -10,7 +8,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Flame } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import {
   ResponsiveContainer,
   PieChart,
@@ -24,70 +21,17 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { useManagerDashboard } from "@/hooks/useManagerDashboard";
 
 // === Palette từ dự án (Primary Emerald + Accent Orange) ===
 const CHART_COLORS = ["#10B981", "#E8604C", "#06B6D4", "#F59E0B"];
 
-// === Mock data: Thống kê theo tháng ===
-const monthlyStats = [
-  { month: "Tháng 5", events: 5, members: 320, posts: 10 },
-  { month: "Tháng 6", events: 6, members: 400, posts: 15 },
-  { month: "Tháng 7", events: 7, members: 450, posts: 22 },
-  { month: "Tháng 8", events: 8, members: 600, posts: 25 },
-  { month: "Tháng 9", events: 5, members: 530, posts: 18 },
-  { month: "Tháng 10", events: 9, members: 750, posts: 30 },
-];
-
-const mockNewEvents = [
-  {
-    id: 1,
-    title: "Trồng cây ven sông",
-    publishedAt: "2025-11-01",
-    posts: 2,
-    members: 120,
-  },
-  {
-    id: 2,
-    title: "Dọn rác bãi biển",
-    publishedAt: "2025-10-28",
-    posts: 5,
-    members: 230,
-  },
-  {
-    id: 3,
-    title: "Giúp đỡ trẻ em",
-    publishedAt: "2025-10-25",
-    posts: 1,
-    members: 80,
-  },
-];
-
-const mockTrending = [
-  { id: 2, title: "Dọn rác bãi biển", deltaMembers: 120, deltaLikes: 40 },
-  { id: 1, title: "Trồng cây ven sông", deltaMembers: 50, deltaLikes: 10 },
-];
-
 export default function ManagerDashboard() {
-  const router = useRouter();
-  const [stats, setStats] = useState({
-    totalEvents: 0,
-    totalMembers: 0,
-    recentPosts: 0,
-  });
-  const [newEvents, setNewEvents] = useState([]);
-  const [trending, setTrending] = useState([]);
+  const { stats, newEvents, trending, monthlyStats, loading } = useManagerDashboard();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/manager");
-      return;
-    }
-
-    setStats({ totalEvents: 12, totalMembers: 540, recentPosts: 18 });
-    setNewEvents(mockNewEvents);
-    setTrending(mockTrending);
-  }, [router]);
+  if (loading) {
+    return <div className="p-8">Đang tải dữ liệu...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-orange-50 text-[hsl(var(--foreground))] p-8 animate-fadeIn">
@@ -271,11 +215,10 @@ export default function ManagerDashboard() {
                     key={ev.id}
                     className={`
             relative overflow-hidden p-5 rounded-xl border transition-all duration-300
-            ${
-              i % 2 === 0
-                ? "bg-gradient-to-r from-orange-100/80 to-rose-100/80"
-                : "bg-gradient-to-r from-yellow-100/80 to-orange-50/80"
-            }
+            ${i % 2 === 0
+                        ? "bg-gradient-to-r from-orange-100/80 to-rose-100/80"
+                        : "bg-gradient-to-r from-yellow-100/80 to-orange-50/80"
+                      }
             hover:scale-[1.02] hover:shadow-md group
           `}
                   >
