@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.LoginResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ResponseDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Role;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.utils.JwtUtil;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
@@ -37,11 +38,12 @@ public class OAuth2API {
     /**
      * Endpoint để generate JWT token sau khi OAuth2 login thành công.
      * Frontend gọi endpoint này với email đã được verify từ Google.
-     * 
+     * <p>
      * LƯU Ý: Trong production, nên verify Google ID token thay vì chỉ nhận email.
      * Xem:
-     * https://developers.google.com/identity/gsi/web/guides/verify-google-id-token
-     * 
+     * <a href=
+     * "https://developers.google.com/identity/gsi/web/guides/verify-google-id-token">...</a>
+     *
      * @param request chứa email đã được authenticate từ Google
      * @return JWT token
      */
@@ -72,7 +74,7 @@ public class OAuth2API {
             // Lấy role của user
             String role = user.getRoles().stream()
                     .findFirst()
-                    .map(r -> r.getRoleName())
+                    .map(Role::getRoleName)
                     .orElse("VOLUNTEER");
 
             // Generate JWT token

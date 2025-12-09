@@ -1,6 +1,8 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.service.impl;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,9 +11,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.RegistrationRequest;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.UpdateProfileRequest;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.EventResponseDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.UserProfileResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.BaseEntity;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Role;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Registration;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RegistrationRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RoleRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.UserService;
@@ -25,11 +32,14 @@ public class UserServiceImpl implements UserService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final RegistrationRepository registrationRepository;
+
     public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, RegistrationRepository registrationRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.registrationRepository = registrationRepository;
     }
 
     @Override
@@ -122,5 +132,88 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmailIgnoreCase(auth.getName())
                 .map(BaseEntity::getId)
                 .orElse(null);
+    }
+
+    @Override
+    public User findUserById(UUID userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("UserId cannot be null");
+        }
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    }
+
+    @Override
+    public User updateUserProfile(UUID userId, String name, String email) {
+        User user = findUserById(userId);
+
+        // Cập nhật name nếu có
+        if (name != null && !name.isBlank()) {
+            user.setName(name);
+        }
+
+        // Cập nhật email nếu có
+        if (email != null && !email.isBlank()) {
+            email = email.toLowerCase();
+            // Kiểm tra email đã tồn tại chưa (ngoại trừ user hiện tại)
+            if (!user.getEmail().equalsIgnoreCase(email) && userRepository.existsByEmailIgnoreCase(email)) {
+                throw new IllegalArgumentException("Email already exists!");
+            }
+            user.setEmail(email);
+        }
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    public UserProfileResponse getUserProfile(UUID userId) {
+        User user = findUserById(userId);
+        return UserProfileResponse.builder()
+                .userId(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+
+    @Override
+    public UserProfileResponse updateUserProfile(UUID userId, UpdateProfileRequest request) {
+        User updated = this.updateUserProfile(userId, request.getName(), request.getEmail());
+        return UserProfileResponse.builder()
+                .userId(updated.getId())
+                .name(updated.getName())
+                .email(updated.getEmail())
+                .isActive(updated.getIsActive())
+                .createdAt(updated.getCreatedAt())
+                .updatedAt(updated.getUpdatedAt())
+                .build();
+    }
+
+    @Override
+    public List<EventResponseDTO> getUserEvents(UUID userId) {
+
+        findUserById(userId);
+        List<Registration> registrations = registrationRepository.findByVolunteerId(userId);
+        return registrations.stream().map(registration -> {
+            var event = registration.getEvent();
+            return EventResponseDTO.builder()
+                    .eventId(event.getId())
+                    .title(event.getTitle())
+                    .description(event.getDescription())
+                    .location(event.getLocation())
+                    .startTime(event.getStartTime())
+                    .endTime(event.getEndTime())
+                    .maxVolunteers(event.getMaxVolunteers())
+                    .createdByName(event.getCreatedBy() == null ? null : event.getCreatedBy().getName())
+                    .registrationStatus(registration.getRegistrationStatus().toString())
+                    .registeredAt(registration.getCreatedAt())
+                    .isCompleted(registration.getIsCompleted())
+                    .completionNotes(registration.getCompletionNotes())
+                    .adminApprovalStatus(event.getAdminApprovalStatus().toString())
+                    .createdAt(event.getCreatedAt())
+                    .build();
+        }).collect(Collectors.toList());
     }
 }

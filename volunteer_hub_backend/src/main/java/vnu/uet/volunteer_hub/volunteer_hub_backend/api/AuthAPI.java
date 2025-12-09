@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.ResetPasswordRequ
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.LoginRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.LoginResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ResponseDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Role;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.utils.JwtUtil;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.utils.TokenUtil;
@@ -125,7 +127,7 @@ public class AuthAPI {
             // Lấy role (lấy role đầu tiên nếu có nhiều roles)
             String role = user.getRoles().stream()
                     .findFirst()
-                    .map(r -> r.getRoleName())
+                    .map(Role::getRoleName)
                     .orElse("VOLUNTEER");
 
             // Generate JWT token
@@ -377,7 +379,7 @@ public class AuthAPI {
 
             // Roles từ authorities
             info.put("roles", auth.getAuthorities().stream()
-                    .map(a -> a.getAuthority()).toList());
+                    .map(GrantedAuthority::getAuthority).toList());
 
             // Nếu cần thêm thông tin chi tiết, có thể load từ database
             // Nhưng để giảm database calls, chỉ trả về thông tin từ token

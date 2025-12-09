@@ -59,13 +59,14 @@ public class SecurityConfig {
                                 "/ui/**",
                                 "/api/auth/**",
                                 "/api/dashboard/**",
-                                "/api/events",
+                                "/api/events/**",
                                 "/api/posts/visible",
                                 "/api/posts/{postId}",
                                 "/api/posts",
                                 "/api/posts/**",
                                 "/api/comments/**",
                                 "/api/users/**",
+                                "/api/users/profile/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**")
                         .permitAll()
@@ -111,7 +112,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(
-                java.util.List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
+                java.util.List.of("Authorization", "Content-Type", "Accept", "Origin",
+                        "X-Requested-With"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(java.util.List.of("Authorization"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

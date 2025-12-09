@@ -66,14 +66,14 @@ public class EventAPI {
      * Join an event - User registers to volunteer
      * POST /api/events/{eventId}/join/{userId}
      * Response: JoinEventResponse
-     * 
+     * <p>
      * TODO: Sau khi test xong, sửa lại thành:
      * @PostMapping("/{eventId}/join")
      * public ResponseEntity<?> joinEvent(@PathVariable UUID eventId) {
      * Authentication auth = SecurityContextHolder.getContext().getAuthentication();
      * UUID userId = userService.getViewerIdFromAuthentication(auth);
      */
-    @PostMapping("/{eventId}/join/{userId}")
+    @PostMapping("/{eventId}/participants/{userId}")
     public ResponseEntity<?> joinEvent(@PathVariable UUID eventId, @PathVariable UUID userId) {
         try {
             // [TEST MODE] userId được truyền từ path parameter
@@ -110,14 +110,13 @@ public class EventAPI {
      * Leave an event - User cancels registration
      * DELETE /api/events/{eventId}/leave/{userId}
      * Response: JoinEventResponse
-     * 
+     * <p>
      * TODO: Sau khi test xong, sửa lại thành:
-     * @DeleteMapping("/{eventId}/leave")
      * public ResponseEntity<?> leaveEvent(@PathVariable UUID eventId) {
      * Authentication auth = SecurityContextHolder.getContext().getAuthentication();
      * UUID userId = userService.getViewerIdFromAuthentication(auth);
      */
-    @DeleteMapping("/{eventId}/leave/{userId}")
+    @DeleteMapping("/{eventId}/participants/{userId}")
     public ResponseEntity<?> leaveEvent(@PathVariable UUID eventId, @PathVariable UUID userId) {
         try {
             // [TEST MODE] userId được truyền từ path parameter

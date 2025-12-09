@@ -85,6 +85,11 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
+        // Check if event is approved
+        if (!event.getAdminApprovalStatus().equals(EventApprovalStatus.APPROVED)) {
+            throw new IllegalStateException("Cannot join event that is not approved");
+        }
+
         // Validate user exists
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));

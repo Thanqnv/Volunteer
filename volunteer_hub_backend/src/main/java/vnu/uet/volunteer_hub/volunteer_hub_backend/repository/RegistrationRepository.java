@@ -1,5 +1,6 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,4 +16,13 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
     Optional<Registration> findByEventIdAndVolunteerId(UUID eventId, UUID volunteerId);
 
     long countByEventIdAndRegistrationStatus(UUID eventId, RegistrationStatus registrationStatus);
+
+    /**
+     * Tìm tất cả registrations của một volunteer (user).
+     * Dùng để lấy danh sách sự kiện đã tham gia.
+     * 
+     * @param volunteerId ID của volunteer (user)
+     * @return Danh sách registrations
+     */
+    List<Registration> findByVolunteerId(UUID volunteerId);
 }
