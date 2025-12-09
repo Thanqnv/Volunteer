@@ -1,10 +1,12 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.api;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,15 +35,11 @@ public class EventAPI {
             List<Event> approvedEventsList = eventService.getApprovedEvents();
 
             // Map to simple DTO
-            List<EventSimpleDTO> approvedEvents = approvedEventsList.stream()
-                    .map(e -> new EventSimpleDTO(
-                            e.getId().toString(),
-                            e.getTitle(),
-                            e.getLocation(),
-                            e.getDescription()))
-                    .collect(Collectors.toList());
+            List<EventFeedDTO> approvedEvents = approvedEventsList.stream()
+                    .map(this::mapToFeedDTO)
+                    .toList();
 
-            return ResponseEntity.ok(ResponseDTO.<List<EventSimpleDTO>>builder()
+            return ResponseEntity.ok(ResponseDTO.<List<EventFeedDTO>>builder()
                     .message("Events retrieved successfully")
                     .data(approvedEvents)
                     .build());
@@ -55,8 +53,52 @@ public class EventAPI {
     }
 
     /**
-     * Simple DTO for event list
+     * Get event detail for approved, non-archived events.
      */
-    public record EventSimpleDTO(String id, String title, String location, String description) {
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getApprovedEventDetail(@PathVariable String id) {
+        try {
+            Event event = eventService.getApprovedEvent(UUID.fromString(id));
+            return ResponseEntity.ok(ResponseDTO.<EventFeedDTO>builder()
+                    .message("Event retrieved successfully")
+                    .data(mapToFeedDTO(event))
+                    .build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ResponseDTO.builder()
+                    .message("Invalid event id format")
+                    .detail(e.getMessage())
+                    .build());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ResponseDTO.builder()
+                    .message("Failed to retrieve event")
+                    .detail(e.getMessage())
+                    .build());
+        }
+    }
+
+    private EventFeedDTO mapToFeedDTO(Event e) {
+        return new EventFeedDTO(
+                e.getId().toString(),
+                e.getTitle(),
+                e.getDescription(),
+                e.getLocation(),
+                e.getStartTime(),
+                e.getEndTime(),
+                e.getRegistrationDeadline(),
+                e.getMaxVolunteers());
+    }
+
+    /**
+     * DTO for user-facing event feed.
+     */
+    public record EventFeedDTO(
+            String id,
+            String title,
+            String description,
+            String location,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            LocalDateTime registrationDeadline,
+            Integer maxVolunteers) {
     }
 }

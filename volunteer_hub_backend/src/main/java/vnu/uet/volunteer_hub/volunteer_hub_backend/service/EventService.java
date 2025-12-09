@@ -14,4 +14,9 @@ public interface EventService {
     List<Event> getAllEvents();
 
     List<Event> getApprovedEvents();
+
+    /**
+     * Get a single approved and non-archived event by id.
+     */
+    Event getApprovedEvent(UUID id);
 }

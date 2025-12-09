@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
 import BasicPagination from "@/components/ui/pagination.jsx";
 import EventCard from "@/components/dashboard/EventCard";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -9,18 +7,14 @@ import FeaturedSlider from "@/components/dashboard/FeaturedSlider";
 import EventDetailSlideUp from "@/components/dashboard/EventDetailSlideUp";
 import { useEvents } from "@/hooks/useEvents";
 import { eventService } from "@/services/eventService";
-
-const parseDate = (value) => {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-};
+import { motion } from "framer-motion";
 
 export default function EventShowcase() {
   const {
     allEvents,
     featuredEvents,
     filteredEvents,
+    displayedEvents,
     filters,
     setFilters,
     resetFilters,
@@ -33,189 +27,50 @@ export default function EventShowcase() {
     cancelRegistration
   } = useEvents();
 
-  const eventsPerPage = 9;
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
-
-  const normalizeEvent = useCallback((event = {}) => ({
-    event_id: event.event_id || event.eventId || event.id,
-    title: event.title || "Sự kiện",
-    description: event.description || "",
-    location: event.location || "Chưa cập nhật",
-    start_time: event.start_time || event.startTime || event.createdAt || "",
-    end_time: event.end_time || event.endTime || event.start_time || event.startTime || "",
-    registration_deadline: event.registration_deadline
-      || event.registrationDeadline
-      || event.end_time
-      || event.endTime
-      || event.start_time
-      || event.startTime
-      || "",
-    current_volunteers: event.current_volunteers
-      ?? event.currentVolunteers
-      ?? event.registrationCount
-      ?? 0,
-    max_volunteers: event.max_volunteers
-      ?? event.maxVolunteers
-      ?? event.capacity
-      ?? 0,
-    category: event.category || "Khác",
-    image: event.image || event.thumbnailUrl || ""
-  }), []);
-
-  // Add state for slide-up visibility and event details
+  // Slide-up state (UI specific, kept local)
   const [isSlideUpOpen, setIsSlideUpOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const fetchFeaturedEvents = useCallback(async () => {
-    if (!baseUrl) return;
-
-    try {
-      const response = await fetch(`${baseUrl}/api/dashboard`);
-      if (!response.ok) {
-        throw new Error("Không tải được sự kiện nổi bật");
-      }
-
-      const payload = await response.json();
-      const trending = payload?.data?.trendingEvents || payload?.trendingEvents || [];
-      setFeaturedEvents(trending.map(normalizeEvent));
-    } catch (err) {
-      console.error("Lỗi tải sự kiện nổi bật:", err);
-    }
-  }, [baseUrl, normalizeEvent]);
-
-  // Fetch All Events
-  const getAllEvents = useCallback(async () => {
-    if (!baseUrl) return;
-    setError(null);
-
-    try {
-      const response = await fetch(`${baseUrl}/api/admin/events`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Lỗi khi tải danh sách sự kiện");
-      }
-
-      const payload = await response.json();
-      const events = payload?.data || payload?.events || [];
-      setAllEvents(events.map(normalizeEvent));
-    } catch (err) {
-      console.error("Lỗi tải danh sách sự kiện:", err);
-      setError(err.message);
-    }
-  }, [baseUrl, normalizeEvent]);
-
-  // Filter Events
-  useEffect(() => {
-    const filtered = allEvents.filter((event) => {
-      let dateMatch = true;
-
-      // Date range filter
-      if (filters.startDate || filters.endDate) {
-        const eventDate = parseDate(event.start_time);
-        if (!eventDate) return false;
-
-        if (filters.startDate) {
-          const start = parseDate(filters.startDate);
-          start?.setHours(0, 0, 0, 0);
-          if (start && eventDate < start) return false;
-        }
-
-        if (filters.endDate) {
-          const end = parseDate(filters.endDate);
-          end?.setHours(23, 59, 59, 999);
-          if (end && eventDate > end) return false;
-        }
-      }
-
-      const categoryMatch = filters.category === "all" ||
-        event.category === filters.category;
-      const locationMatch = filters.location === "all" ||
-        event.location === filters.location;
-
-      // Text search filter (title, description, location)
-      const q = (filters.search || "").toLowerCase().trim();
-      const text = [event.title, event.description, event.location]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      const searchMatch = q === "" || text.includes(q);
-
-      return dateMatch && categoryMatch && locationMatch && searchMatch;
-    });
-    setFilteredEvents(filtered);
-    setTotalPages(Math.max(1, Math.ceil(filtered.length / eventsPerPage)));
-    setCurrentPage(1);
-  }, [allEvents, filters]);
-
-  useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      await Promise.all([getAllEvents(), fetchFeaturedEvents()]);
-      setIsLoading(false);
-    };
-    load();
-  }, [fetchFeaturedEvents, getAllEvents]);
-
-  // Handle Page Change
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Handle Register
+  // Handlers
   const handleRegister = async (eventId) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/events/${eventId}/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Lỗi khi đăng ký sự kiện");
-      }
-
-      getAllEvents();
-    } catch (error) {
-      console.error("Lỗi đăng ký:", error);
+    const success = await registerEvent(eventId);
+    if (success && selectedEvent?.event_id === eventId) {
+      setSelectedEvent(prev => ({ ...prev, registered: true }));
     }
   };
 
   const handleCancelRegistration = async (eventId) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/events/${eventId}/cancel`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Lỗi khi hủy đăng ký");
-      }
-
-      getAllEvents();
-    } catch (error) {
-      console.error("Lỗi hủy đăng ký:", error);
+    const success = await cancelRegistration(eventId);
+    if (success && selectedEvent?.event_id === eventId) {
+      setSelectedEvent(prev => ({ ...prev, registered: false }));
     }
   };
 
-  // Function to handle event card click
-  const handleEventClick = (event) => {
-    setSelectedEvent(event);
-    setIsSlideUpOpen(true);
+  const handleEventClick = async (eventId) => {
+    console.log("Clicked event ID:", eventId);
+    try {
+      // Try to find in local state first for immediate feedback
+      const localEvent = allEvents.find(e => e.event_id === eventId);
+      if (localEvent) setSelectedEvent(localEvent);
+
+      setIsSlideUpOpen(true);
+
+      // Fetch full details
+      const details = await eventService.getEventDetails(eventId);
+      setSelectedEvent(details);
+    } catch (err) {
+      console.error("Error fetching details:", err);
+      // Keep showing local event if detail fetch fails
+      if (!selectedEvent) {
+        setSelectedEvent({
+          title: "Error",
+          description: "Unable to fetch event details. Please try again later.",
+          location: "N/A",
+          start_time: "N/A",
+          category: "N/A",
+        });
+      }
+    }
   };
 
   const closeSlideUp = () => {
@@ -223,133 +78,55 @@ export default function EventShowcase() {
     setSelectedEvent(null);
   };
 
-  const paginatedEvents = filteredEvents.slice(
-    (currentPage - 1) * eventsPerPage,
-    currentPage * eventsPerPage
-  );
-
   return (
-    <div className="container mx-auto pt-10 pl-64 space-y-6">
-      <div className="p-6">
-        {/* Featured Events Slider */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Sự kiện nổi bật</h2>
-          <motion.div
-            className="flex space-x-4 overflow-x-auto pb-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            {featuredEvents.length > 0 ? (
-              featuredEvents.slice(0, 10).map((event) => (
-                <div key={event.event_id} className="min-w-[350px]">
-                  <EventCard
-                    event={event}
-                    onRegister={handleRegister}
-                    onCancel={handleCancelRegistration}
-                    onClick={() => handleEventClick(event)}
-                  />
-                </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground">Chưa có sự kiện nổi bật</p>
-            )}
-          </motion.div>
-        </section>
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Sự kiện tương tác nhiều</h2>
-          <motion.div
-            className="flex space-x-4 overflow-x-auto pb-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            {featuredEvents.length > 0 ? (
-              featuredEvents.slice(0, 10).map((event) => (
-                <div key={event.event_id} className="min-w-[350px]">
-                  <EventCard
-                    event={event}
-                    onRegister={handleRegister}
-                    onCancel={handleCancelRegistration}
-                    onClick={() => handleEventClick(event)}
-                  />
-                </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground">Chưa có sự kiện tương tác</p>
-            )}
-          </motion.div>
-        </section>
+    <div className="container mx-auto py-8 px-0 md:px-10 space-y-8">
+      {/* Analytics Section */}
+      <section>
+        <h1 className="text-3xl font-bold mb-6 text-zinc-900 dark:text-zinc-100">Event Dashboard</h1>
+        <AnalyticsCard events={allEvents} />
+      </section>
+
+      {/* Featured Events Slider */}
+      <section>
+        <FeaturedSlider
+          events={featuredEvents}
+          onRegister={handleRegister}
+          onCancel={handleCancelRegistration}
+          onClick={handleEventClick}
+        />
+      </section>
+
+      {/* Main Content Area */}
+      <section className="relative">
+
+        {/* Background gradient + subtle 3D */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-50/40 dark:via-zinc-900/20 to-transparent pointer-events-none" />
+
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight drop-shadow-md">
+            ✨ Khám phá sự kiện
+          </h2>
+        </div>
 
         {/* Filter Bar */}
-        <section className="mb-6">
-          <div className="flex flex-wrap items-end gap-4">
-            {/* Date Range Filter */}
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col">
-                <label className="text-sm text-muted-foreground mb-1">Từ ngày</label>
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label className="text-sm text-muted-foreground mb-1">Đến ngày</label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                  className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              {(filters.startDate || filters.endDate) && (
-                <button
-                  onClick={() => setFilters((prev) => ({ ...prev, startDate: "", endDate: "" }))}
-                  className="mt-6 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                >
-                  Xóa
-                </button>
-              )}
-            </div>
-            <div className="flex flex-col">
-              <label className="text-sm text-muted-foreground mb-1">Thể loại</label>
-              <Select onValueChange={(value) => setFilters((prev) => ({ ...prev, category: value }))}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Tất cả" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="Môi trường">Môi trường</SelectItem>
-                  <SelectItem value="Giáo dục">Giáo dục</SelectItem>
-                  <SelectItem value="Cộng đồng">Cộng đồng</SelectItem>
-                  <SelectItem value="Y tế">Y tế</SelectItem>
-                  <SelectItem value="Văn hóa">Văn hóa</SelectItem>
-                  <SelectItem value="Công nghệ">Công nghệ</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="mb-6 backdrop-blur-xl bg-white/40 dark:bg-zinc-900/30 rounded-2xl shadow-xl border border-white/30 dark:border-zinc-800/40 p-4">
+          <FilterBar
+            filters={filters}
+            setFilters={setFilters}
+            onReset={resetFilters}
+          />
+        </div>
 
         {/* Events List */}
         <div className="min-h-[400px]">
           {isLoading ? (
-            <div className="text-center py-10">
-              <p>Đang tải...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-10 text-red-500">
-              <p>Lỗi: {error}</p>
-            </div>
-          ) : filteredEvents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedEvents.map((event) => (
-                <EventCard
-                  key={event.event_id}
-                  event={event}
-                  onRegister={handleRegister}
-                  onCancel={handleCancelRegistration}
-                  onClick={() => handleEventClick(event)}
+            /* Loading Skeleton */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div
+                  key={n}
+                  className="h-[350px] rounded-2xl bg-gradient-to-br from-zinc-200 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 animate-pulse shadow-inner"
+                  style={{ transform: "rotateX(5deg) rotateY(-5deg)" }}
                 />
               ))}
             </div>
@@ -368,7 +145,7 @@ export default function EventShowcase() {
               transition={{ duration: 0.4, ease: "easeOut" }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
-              {filteredEvents.map((event) => (
+              {displayedEvents.map((event) => (
                 <motion.div
                   key={event.event_id}
                   whileHover={{

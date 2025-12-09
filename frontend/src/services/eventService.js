@@ -1,12 +1,39 @@
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+const normalizeEvent = (event = {}) => ({
+    event_id: event.event_id || event.eventId || event.id,
+    title: event.title || "Sự kiện",
+    description: event.description || "",
+    location: event.location || "Đang cập nhật",
+    start_time: event.start_time || event.startTime || event.createdAt || "",
+    end_time: event.end_time || event.endTime || event.start_time || event.startTime || "",
+    registration_deadline: event.registration_deadline
+        || event.registrationDeadline
+        || event.end_time
+        || event.endTime
+        || event.start_time
+        || event.startTime
+        || "",
+    max_volunteers: event.max_volunteers ?? event.maxVolunteers ?? 0,
+    category: event.category || "Khác",
+    image: event.image || "",
+    registered: !!event.registered,
+});
 
 export const eventService = {
     getAllEvents: async (page = 1, limit = 9) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/events?page=${page}&limit=${limit}`);
+            const response = await fetch(`${API_BASE_URL}/api/events`);
             if (!response.ok) throw new Error("Lỗi khi tải danh sách sự kiện");
-            return await response.json();
+
+            const payload = await response.json();
+            const events = (payload?.data || payload?.events || []).map(normalizeEvent);
+
+            return {
+                events,
+                total: events.length,
+                totalPages: Math.max(1, Math.ceil(events.length / limit)),
+            };
         } catch (error) {
             console.error("Error fetching events:", error);
             throw error;
@@ -45,7 +72,9 @@ export const eventService = {
         try {
             const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
             if (!response.ok) throw new Error("Failed to fetch event details");
-            return await response.json();
+            const payload = await response.json();
+            const detail = payload?.data || payload;
+            return normalizeEvent(detail);
         } catch (error) {
             console.error("Error fetching event details:", error);
             throw error;

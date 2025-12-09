@@ -66,4 +66,16 @@ public class EventServiceImpl implements EventService {
         return eventRepository.findAllByAdminApprovalStatusAndIsArchived(EventApprovalStatus.APPROVED, Boolean.FALSE);
     }
 
+    @Override
+    public Event getApprovedEvent(UUID id) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id " + id));
+
+        if (event.getAdminApprovalStatus() != EventApprovalStatus.APPROVED || Boolean.TRUE.equals(event.getIsArchived())) {
+            throw new EntityNotFoundException("Event is not approved or has been archived");
+        }
+
+        return event;
+    }
+
 }

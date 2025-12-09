@@ -12,7 +12,7 @@ import {
     MessageCircle,
     MoreHorizontal,
 } from "lucide-react";
-import "react-quill/dist/quill.snow.css";
+import "quill/dist/quill.snow.css";
 import { useCreatePost } from "../../hooks/useCreatePost";
 
 // Dynamic import ReactQuill
