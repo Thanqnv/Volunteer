@@ -2,9 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import BasicPagination from "@/components/ui/pagination.jsx";
-import EventCard from "@/components/ui/card-detail.jsx";
-import SlideUpDetail from "@/components/ui/slide-up.jsx";
-import SearchBar from "@/components/ui/search-bar";
+import EventCard from "@/components/dashboard/EventCard";
+import FilterBar from "@/components/dashboard/FilterBar";
+import AnalyticsCard from "@/components/dashboard/AnalyticsCard";
+import FeaturedSlider from "@/components/dashboard/FeaturedSlider";
+import EventDetailSlideUp from "@/components/dashboard/EventDetailSlideUp";
+import { useEvents } from "@/hooks/useEvents";
+import { eventService } from "@/services/eventService";
 
 const parseDate = (value) => {
   if (!value) return null;
@@ -13,20 +17,21 @@ const parseDate = (value) => {
 };
 
 export default function EventShowcase() {
-  const [featuredEvents, setFeaturedEvents] = useState([]);
-  const [allEvents, setAllEvents] = useState([]);
-  const [filteredEvents, setFilteredEvents] = useState([]);
-  const [filters, setFilters] = useState({
-    startDate: "",
-    endDate: "",
-    category: "all",
-    location: "all",
-    search: ""
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const {
+    allEvents,
+    featuredEvents,
+    filteredEvents,
+    filters,
+    setFilters,
+    resetFilters,
+    currentPage,
+    totalPages,
+    handlePageChange,
+    isLoading,
+    error,
+    registerEvent,
+    cancelRegistration
+  } = useEvents();
 
   const eventsPerPage = 9;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
@@ -185,7 +190,6 @@ export default function EventShowcase() {
     }
   };
 
-  // Handle Cancel Registration
   const handleCancelRegistration = async (eventId) => {
     try {
       const response = await fetch(
@@ -214,7 +218,6 @@ export default function EventShowcase() {
     setIsSlideUpOpen(true);
   };
 
-  // Function to close the slide-up
   const closeSlideUp = () => {
     setIsSlideUpOpen(false);
     setSelectedEvent(null);
@@ -328,39 +331,8 @@ export default function EventShowcase() {
               </Select>
             </div>
 
-            <div className="flex flex-col">
-              <label className="text-sm text-muted-foreground mb-1">Địa điểm</label>
-              <Select onValueChange={(value) => setFilters((prev) => ({ ...prev, location: value }))}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Tất cả" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="Hà Nội">Hà Nội</SelectItem>
-                  <SelectItem value="TP.HCM">TP.HCM</SelectItem>
-                  <SelectItem value="Đà Nẵng">Đà Nẵng</SelectItem>
-                  <SelectItem value="Online">Online</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Search Bar inline with filters */}
-            <div className="flex-1 min-w-[260px]">
-              <SearchBar
-                className="w-full"
-                placeholder="Tìm kiếm theo tên sự kiện"
-                value={filters.search}
-                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                onSearch={(value) => setFilters((prev) => ({ ...prev, search: value }))}
-                size="large"
-              />
-            </div>
-          </div>
-        </section>
-        
         {/* Events List */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Tất cả sự kiện</h2>
+        <div className="min-h-[400px]">
           {isLoading ? (
             <div className="text-center py-10">
               <p>Đang tải...</p>
@@ -381,17 +353,56 @@ export default function EventShowcase() {
                 />
               ))}
             </div>
+          ) : error ? (
+            /* Error Box */
+            <div className="text-center py-20 rounded-2xl bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 shadow-lg">
+              <p className="text-red-700 dark:text-red-300 font-medium text-lg">
+                Lỗi: {error}
+              </p>
+            </div>
+          ) : filteredEvents.length > 0 ? (
+            /* Animated Event List */
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
+              {filteredEvents.map((event) => (
+                <motion.div
+                  key={event.event_id}
+                  whileHover={{
+                    scale: 1.035,
+                    rotateX: 4,
+                    rotateY: -4,
+                    boxShadow: "0px 25px 60px rgba(0,0,0,0.15)",
+                  }}
+                  transition={{ type: "spring", stiffness: 250, damping: 18 }}
+                  className="transform-gpu"
+                >
+                  <EventCard
+                    event={event}
+                    onRegister={handleRegister}
+                    onCancel={handleCancelRegistration}
+                    onClick={() => handleEventClick(event.event_id)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
           ) : (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground">Không tìm thấy sự kiện</p>
+            /* Empty State */
+            <div className="text-center py-20 rounded-2xl bg-zinc-100/60 dark:bg-zinc-800/30 border border-dashed border-zinc-300 dark:border-zinc-700 shadow-lg backdrop-blur-md">
+              <p className="text-zinc-600 dark:text-zinc-400 text-lg">
+                Không tìm thấy sự kiện nào phù hợp
+              </p>
             </div>
           )}
-        </section>
-      </div>
+        </div>
+      </section>
 
       {/* Pagination */}
       {!isLoading && filteredEvents.length > 0 && (
-        <div className="flex justify-center my-6">
+        <div className="flex justify-center mt-8">
           <BasicPagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -401,21 +412,13 @@ export default function EventShowcase() {
       )}
 
       {/* Event Details Slide-up */}
-      {isSlideUpOpen && (
-        <SlideUpDetail
-          isOpen={isSlideUpOpen}
-          onClose={closeSlideUp}
-          title={selectedEvent?.title}
-          description={selectedEvent?.description}
-          variant="phone"
-        >
-          <div>
-            <p><strong>Location:</strong> {selectedEvent?.location}</p>
-            <p><strong>Start Time:</strong> {selectedEvent?.start_time}</p>
-            <p><strong>Category:</strong> {selectedEvent?.category}</p>
-          </div>
-        </SlideUpDetail>
-      )}
+      <EventDetailSlideUp
+        isOpen={isSlideUpOpen}
+        onClose={closeSlideUp}
+        event={selectedEvent}
+        onRegister={handleRegister}
+        onCancel={handleCancelRegistration}
+      />
     </div>
   );
 }

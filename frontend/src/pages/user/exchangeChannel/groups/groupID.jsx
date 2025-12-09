@@ -7,7 +7,7 @@ import { CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from 
 import { Button } from "@/components/ui/button";
 import get from "lodash.get"; // thay rc-util cho an toàn
 
-export default function GroupDetail() {
+export default async function GroupDetail() {
   const router = useRouter();
   const { groupId } = router.query;
 
