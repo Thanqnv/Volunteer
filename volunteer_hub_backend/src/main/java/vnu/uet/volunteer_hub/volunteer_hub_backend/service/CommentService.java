@@ -14,4 +14,6 @@ public interface CommentService {
     Page<CommentResponse> getCommentsByPostId(UUID postId, Pageable pageable);
 
     CommentResponse updateComment(UUID commentId, UpdateCommentRequest request, UUID userId);
+
+    void deleteComment(UUID commentId, UUID userId);
 }
