@@ -7,10 +7,28 @@ import { AuthProvider } from '../context/AuthContext';
 import { useRouter } from "next/router";
 import { useAppLogic } from '../hooks/useAppLogic';
 import { Toaster } from "@/components/ui/toaster";
+import { useEffect } from 'react';
+import Head from 'next/head';
+import useFirebaseNotification from '../hooks/useFirebaseNotification';
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
   const { showScrollTopButton, handleScrollToTop } = useAppLogic(router);
+  useFirebaseNotification();
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          }, err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+  }, []);
+
 
   const isValidAdminPage = router.pathname.startsWith('/admin');
   const isAdminLoginPage = router.pathname === '/admin';
@@ -18,8 +36,14 @@ function MyApp({ Component, pageProps }) {
   const isManagerLoginPage = router.pathname === '/manager';
   const isUserPage = router.pathname.startsWith('/user');
 
+
+
   return (
     <AuthProvider>
+      <Head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#ffffff" />
+      </Head>
       {isValidAdminPage ? (
         isAdminLoginPage ? (
           <Component {...pageProps} />
