@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.NotificationResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Notification;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.NotificationRepository;
@@ -29,6 +30,36 @@ public class NotificationServiceImpl implements NotificationService {
                 : notificationRepository.findByRecipientIdAndIsRead(recipientId, isRead, pageable);
 
         return notifications.map(this::toDto);
+    }
+
+    @Override
+    @Transactional
+    public void markAsRead(UUID notificationId, UUID userId) {
+        Notification notification = notificationRepository.findByIdAndRecipientId(notificationId, userId)
+                .orElseThrow(() -> new RuntimeException("Notification not found or you don't have permission"));
+
+        notification.setIsRead(true);
+        notificationRepository.save(notification);
+    }
+
+    @Override
+    @Transactional
+    public void markAllAsRead(UUID userId) {
+        notificationRepository.markAllAsReadByRecipientId(userId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteNotification(UUID notificationId, UUID userId) {
+        Notification notification = notificationRepository.findByIdAndRecipientId(notificationId, userId)
+                .orElseThrow(() -> new RuntimeException("Notification not found or you don't have permission"));
+
+        notificationRepository.delete(notification);
+    }
+
+    @Override
+    public Long getUnreadCount(UUID userId) {
+        return notificationRepository.countByRecipientIdAndIsRead(userId, false);
     }
 
     private NotificationResponseDTO toDto(Notification notification) {
