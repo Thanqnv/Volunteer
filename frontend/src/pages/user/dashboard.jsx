@@ -88,6 +88,7 @@ export default function EventShowcase() {
 
             {/* Featured Events Slider */}
             <section>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-zinc-900 dark:text-zinc-100">Featured Events</h2>
                 <FeaturedSlider
                     events={featuredEvents}
                     onRegister={handleRegister}
@@ -121,7 +122,7 @@ export default function EventShowcase() {
                 <div className="min-h-[300px] sm:min-h-[400px]">
                     {isLoading ? (
                         /* Loading Skeleton */
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {[1, 2, 3, 4, 5, 6].map((n) => (
                                 <div
                                     key={n}
@@ -143,7 +144,7 @@ export default function EventShowcase() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, ease: "easeOut" }}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8"
+                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
                         >
                             {filteredEvents.map((event) => (
                                 <motion.div

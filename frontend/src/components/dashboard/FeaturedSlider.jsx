@@ -1,22 +1,8 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import EventCard from './EventCard';
 
 const FeaturedSlider = ({ events, onRegister, onCancel, onClick }) => {
-    const scrollRef = useRef(null);
-
-    const scroll = (direction) => {
-        if (scrollRef.current) {
-            const { current } = scrollRef;
-            const scrollAmount = 400;
-            current.scrollBy({
-                left: direction === 'left' ? -scrollAmount : scrollAmount,
-                behavior: 'smooth'
-            });
-        }
-    };
-
     if (!events || events.length === 0) return null;
 
     return (
@@ -25,33 +11,14 @@ const FeaturedSlider = ({ events, onRegister, onCancel, onClick }) => {
                 <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                     Sự kiện nổi bật <span className="text-lg sm:text-xl">🔥</span>
                 </h2>
-                <div className="hidden sm:flex gap-2">
-                    <button
-                        onClick={() => scroll('left')}
-                        className="p-2 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-                    >
-                        <ChevronLeft size={20} />
-                    </button>
-                    <button
-                        onClick={() => scroll('right')}
-                        className="p-2 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-                    >
-                        <ChevronRight size={20} />
-                    </button>
-                </div>
             </div>
 
-            <div
-                ref={scrollRef}
-                className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 sm:pb-8 -mx-2 sm:-mx-4 px-2 sm:px-4 scrollbar-hide snap-x snap-mandatory"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {events.map((event, index) => (
                     <motion.div
                         key={event.event_id}
-                        className="min-w-[85vw] sm:min-w-[320px] md:min-w-[350px] snap-center"
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.1 }}
                     >
                         <EventCard

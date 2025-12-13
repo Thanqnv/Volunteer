@@ -151,7 +151,7 @@ export default function Navbar() {
             </div>
 
             {/* Desktop Sidebar */}
-            <div className={`hidden lg:block h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 text-zinc-400 shadow-2xl border-r border-zinc-800/50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'
+            <div className={`hidden lg:block min-h-screen h-full bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 text-zinc-400 shadow-2xl border-r border-zinc-800/50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'
                 }`}>
                 <div className={`border-b border-zinc-800/50 backdrop-blur-sm transition-all duration-300 ${isCollapsed ? 'p-4' : 'p-6'
                     }`}>

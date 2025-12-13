@@ -11,7 +11,7 @@ const AnalyticsCard = ({ events }) => {
     const maxVal = Math.max(...monthlyData);
 
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 sm:mb-8">
             <div className="bg-white dark:bg-zinc-900 p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                 <div className="p-2 sm:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg sm:rounded-xl text-blue-600 dark:text-blue-400">
                     <CalendarCheck size={18} className="sm:w-6 sm:h-6" />
