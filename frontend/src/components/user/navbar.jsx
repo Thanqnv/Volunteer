@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
-import { LayoutDashboard, Plane, Users, MessageSquare, BellRing, UserCircle, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { LayoutDashboard, Plane, Users, MessageSquare, BellRing, UserCircle, Menu, X, ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
 const navItems = [
     {
@@ -35,6 +36,23 @@ export default function Navbar() {
     const router = useRouter()
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [isCollapsed, setIsCollapsed] = useState(false)
+    const { logout } = useAuth()
+
+    useEffect(() => {
+        const updateBodyOffset = () => {
+            const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
+            const width = isDesktop ? (isCollapsed ? 80 : 256) : 0
+            document.body.style.paddingLeft = `${width}px`
+            document.documentElement.style.setProperty('--sidebar-offset', `${width}px`)
+        }
+        updateBodyOffset()
+        window.addEventListener('resize', updateBodyOffset)
+        return () => {
+            document.body.style.paddingLeft = ''
+            document.documentElement.style.removeProperty('--sidebar-offset')
+            window.removeEventListener('resize', updateBodyOffset)
+        }
+    }, [isCollapsed])
 
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -46,6 +64,15 @@ export default function Navbar() {
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed)
+    }
+
+    const handleLogout = async () => {
+        try {
+            setIsMobileMenuOpen(false)
+            await logout()
+        } finally {
+            router.push('/')
+        }
     }
 
     return (
@@ -147,11 +174,18 @@ export default function Navbar() {
                             </Link>
                         )
                     })}
+                    <button
+                        onClick={handleLogout}
+                        className="mt-4 w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-400 hover:text-white hover:bg-red-500/10 transition-colors"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span>Đăng xuất</span>
+                    </button>
                 </nav>
             </div>
 
             {/* Desktop Sidebar */}
-            <div className={`hidden lg:block h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 text-zinc-400 shadow-2xl border-r border-zinc-800/50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'
+            <div className={`hidden lg:flex lg:fixed lg:top-0 lg:left-0 lg:bottom-0 lg:z-40 h-screen flex-col bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 text-zinc-400 shadow-2xl border-r border-zinc-800/50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'
                 }`}>
                 <div className={`border-b border-zinc-800/50 backdrop-blur-sm transition-all duration-300 ${isCollapsed ? 'p-4' : 'p-6'
                     }`}>
@@ -177,7 +211,7 @@ export default function Navbar() {
                         )}
                     </button>
                 </div>
-                <nav className={`space-y-1 transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-4'
+                <nav className={`space-y-1 transition-all duration-300 flex-1 ${isCollapsed ? 'p-2' : 'p-4'
                     }`}>
                     {navItems.map((item) => {
                         const isActive = router.pathname === item.href
@@ -241,6 +275,15 @@ export default function Navbar() {
                         )
                     })}
                 </nav>
+                <div className={`border-t border-zinc-800/50 ${isCollapsed ? 'p-3' : 'p-4'}`}>
+                    <button
+                        onClick={handleLogout}
+                        className={`w-full flex items-center ${isCollapsed ? 'justify-center gap-0' : 'gap-3'} px-4 py-3 rounded-lg text-sm font-semibold text-red-400 hover:text-white hover:bg-red-500/10 transition-colors`}
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span className={`${isCollapsed ? 'hidden' : 'inline'}`}>Đăng xuất</span>
+                    </button>
+                </div>
             </div>
         </>
     )

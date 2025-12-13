@@ -1,12 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSignup } from '@/hooks/useSignupForm'; 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useSignup } from "@/hooks/useSignupForm";
 
 const ErrorMessage = ({ message }) => (
   <p className="text-red-600 text-center">{message}</p>
@@ -17,13 +31,8 @@ export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const {
-    formData,
-    loading,
-    errorMessage,
-    handleInputChange,
-    handleSubmit,
-  } = useSignup(() => router.push('/login'));
+  const { formData, loading, errorMessage, handleInputChange, handleSubmit } =
+    useSignup(() => router.push("/login"));
 
   return (
     <div
@@ -34,9 +43,11 @@ export default function SignupForm() {
     >
       <Card className="w-full max-w-md bg-white shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold text-center text-green-500">Tạo Tài Khoản</CardTitle>
+          <CardTitle className="text-3xl font-bold text-center text-green-500">
+            Tạo tài khoản
+          </CardTitle>
           <CardDescription className="text-center">
-            Nhập thông tin của bạn để đăng ký tài khoản mới
+            Nhập thông tin để đăng ký tài khoản mới
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -44,12 +55,17 @@ export default function SignupForm() {
             {errorMessage && <ErrorMessage message={errorMessage} />}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">Tên</Label>
+                <Label
+                  htmlFor="firstName"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Tên
+                </Label>
                 <Input
                   id="firstName"
                   name="firstName"
                   type="text"
-                  placeholder="Hùng"
+                  placeholder="Hang"
                   required
                   className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
                   value={formData.firstName}
@@ -57,12 +73,17 @@ export default function SignupForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">Họ</Label>
+                <Label
+                  htmlFor="lastName"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Họ
+                </Label>
                 <Input
                   id="lastName"
                   name="lastName"
                   type="text"
-                  placeholder="Nguyễn Văn"
+                  placeholder="Nguyen Van"
                   required
                   className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
                   value={formData.lastName}
@@ -71,7 +92,9 @@ export default function SignupForm() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                Email
+              </Label>
               <Input
                 id="email"
                 name="email"
@@ -84,7 +107,28 @@ export default function SignupForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Mật Khẩu</Label>
+              <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                Vai trò đăng ký
+              </Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  handleInputChange({ target: { name: "role", value } })
+                }
+              >
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Chon vai tro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VOLUNTEER">Volunteer</SelectItem>
+                  <SelectItem value="MANAGER">Manager</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                Mật khẩu
+              </Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -105,7 +149,12 @@ export default function SignupForm() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Xác Nhận Mật Khẩu</Label>
+              <Label
+                htmlFor="confirmPassword"
+                className="text-sm font-medium text-gray-700"
+              >
+                Xác nhận mật khẩu
+              </Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -130,7 +179,7 @@ export default function SignupForm() {
               className="w-full bg-green-500 hover:bg-[#d55643] text-white"
               disabled={loading}
             >
-              {loading ? 'Đang đăng ký...' : 'Đăng Ký'}
+              {loading ? "Dang dang ky..." : "Dang ky"}
             </Button>
           </form>
           <div className="relative my-4">
@@ -140,16 +189,16 @@ export default function SignupForm() {
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-white px-2 text-muted-foreground">hoặc</span>
             </div>
-            </div>
-              <Button
-               variant="outline"
-               type="button"
-               className="w-full"
-               onClick={() => {
-                console.log("Google sign-in clicked");
-              }}
-              >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+          </div>
+          <Button
+            variant="outline"
+            type="button"
+            className="w-full"
+            onClick={() => {
+              console.log("Google sign-in clicked");
+            }}
+          >
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -166,16 +215,16 @@ export default function SignupForm() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 fill="#EA4335"
               />
-              </svg>
-               Đăng nhập với Google
+            </svg>
+            Đăng nhập với Google
           </Button>
         </CardContent>
         <div className="px-6 py-4 bg-gray-50 rounded-b-lg">
           <p className="text-sm text-center text-gray-600">
-            Đã có tài khoản?{' '}
+            Đã có tài khoản?{" "}
             <Link href="/login">
               <Button variant="link" className="p-0 text-green-500 hover:text-[#d55643]">
-                Đăng Nhập
+                Đăng nhập
               </Button>
             </Link>
           </p>

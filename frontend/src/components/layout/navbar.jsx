@@ -108,7 +108,10 @@ export default function Navbar() {
     },
   };
 
+  const logoutOffsetClass = isScrolled ? 'top-20' : 'top-28';
+
   return (
+    <>
     <motion.nav
       className="w-full flex items-center fixed top-0 z-50"
       initial={false}
@@ -394,6 +397,18 @@ export default function Navbar() {
         </AnimatePresence>
       </div>
     </motion.nav>
+    {isAuthenticated && (
+      <div className={`fixed right-4 z-40 ${logoutOffsetClass}`}>
+        <Button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 text-white shadow-md"
+        >
+          <FiLogOut className="mr-2" size={18} />
+          Logout
+        </Button>
+      </div>
+    )}
+    </>
   );
 }
 

@@ -1,5 +1,6 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.api;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,21 +34,16 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.LoginResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.PasswordResetToken;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.UserRoleType;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.utils.JwtUtil;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EmailService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.PasswordResetTokenService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.RateLimitService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.UserService;
 
 /**
- * REST API endpoints cho authentication và password recovery.
- * Security improvements:
- * - JWT-based stateless authentication
- * - Không tiết lộ thông tin user enumeration
- * - Sử dụng secure random token thay vì mã số ngắn
- * - Async email sending để không block request
- * - Single-use tokens với TTL
- * - Rate limiting để chống abuse
+ * REST API endpoints for authentication and password recovery.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -60,19 +56,21 @@ public class AuthAPI {
     private final RateLimitService rateLimitService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
     @Value("${security.jwt.expiration-ms}")
     private long jwtExpirationMs;
 
     public AuthAPI(UserService userService, EmailService emailService,
             PasswordResetTokenService passwordResetTokenService, RateLimitService rateLimitService,
-            AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
+            AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserRepository userRepository) {
         this.userService = userService;
         this.emailService = emailService;
         this.passwordResetTokenService = passwordResetTokenService;
         this.rateLimitService = rateLimitService;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/register")
@@ -113,32 +111,44 @@ public class AuthAPI {
             return errorResponse;
         }
 
+        UserRoleType requestedRole = UserRoleType.fromString(request.getRole());
+        if (requestedRole == null) {
+            ResponseDTO<Void> err = ResponseDTO.<Void>builder()
+                    .message("Role khong hop le")
+                    .build();
+            return ResponseEntity.badRequest().body(err);
+        }
+
         try {
-            // Authenticate user với Spring Security
-            Authentication authentication = authenticationManager.authenticate(
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-            // Lấy user details sau khi authenticate thành công
             User user = userService.findByEmail(request.getEmail());
             if (user == null) {
                 throw new RuntimeException("User not found after authentication");
             }
 
-            // Lấy role (lấy role đầu tiên nếu có nhiều roles)
-            String role = user.getRoles().stream()
-                    .findFirst()
-                    .map(r -> r.getRoleName())
-                    .orElse("VOLUNTEER");
+            boolean hasRequestedRole = user.getRoles().stream()
+                    .anyMatch(r -> r != null && requestedRole.name().equalsIgnoreCase(r.getRoleName()));
 
-            // Generate JWT token
+            if (!hasRequestedRole) {
+                throw new RuntimeException("User does not have requested role: " + requestedRole.name());
+            }
+
+            if (user.getAccountType() == null) {
+                user.setAccountType(requestedRole);
+                userRepository.save(user);
+            }
+
+            String role = requestedRole.name();
+
             String token = jwtUtil.generateToken(
                     user.getId().toString(),
                     user.getEmail(),
                     role);
 
-            logger.info("✅ User logged in successfully: {}", user.getEmail());
+            logger.info("User logged in successfully: {}", user.getEmail());
 
-            // Build response với token
             LoginResponse loginResponse = LoginResponse.builder()
                     .accessToken(token)
                     .tokenType("Bearer")
@@ -157,9 +167,9 @@ public class AuthAPI {
             return ResponseEntity.ok(successResponse);
 
         } catch (Exception e) {
-            logger.warn("❌ Login failed for email: {}", request.getEmail());
+            logger.warn("Login failed for email: {}", request.getEmail(), e);
             ResponseDTO<Void> err = ResponseDTO.<Void>builder()
-                    .message("Invalid email or password")
+                    .message("Invalid email, password, or role")
                     .build();
             return ResponseEntity.status(401).body(err);
         }
@@ -181,9 +191,6 @@ public class AuthAPI {
         return null;
     }
 
-    /**
-     * Step 1: request forgot password (generic response).
-     */
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         String email = request.getEmail();
@@ -218,9 +225,6 @@ public class AuthAPI {
         }
     }
 
-    /**
-     * Step 4: validate reset token without consuming it.
-     */
     @PostMapping("/validate-reset-token")
     public ResponseEntity<?> validateResetToken(@Valid @RequestBody ValidateResetTokenRequest request) {
         boolean valid = passwordResetTokenService.validateRawToken(request.getToken()).isPresent();
@@ -238,9 +242,6 @@ public class AuthAPI {
         return ResponseEntity.ok(success);
     }
 
-    /**
-     * Step 5: consume token and reset password.
-     */
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request,
             BindingResult bindingResult) {
@@ -293,11 +294,6 @@ public class AuthAPI {
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
-        // Với JWT stateless, logout được xử lý ở client side
-        // Client chỉ cần xóa token khỏi storage
-        // Server-side logout có thể implement blacklist token nếu cần (sử dụng Redis)
-
-        // Xóa session nếu có (cho backwards compatibility)
         try {
             if (request.getSession(false) != null) {
                 request.getSession(false).invalidate();
@@ -333,27 +329,20 @@ public class AuthAPI {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(unauthorized);
             }
 
-            // Build user info từ JWT authentication
-            java.util.Map<String, Object> info = new java.util.HashMap<>();
+            Map<String, Object> info = new HashMap<>();
 
-            // Principal là UUID (được set trong JwtAuthenticationFilter)
             Object principal = auth.getPrincipal();
             if (principal instanceof java.util.UUID) {
                 info.put("id", principal.toString());
             } else {
-                // Fallback cho session-based auth hoặc OAuth
                 java.util.UUID id = userService.getViewerIdFromAuthentication(auth);
                 info.put("id", id != null ? id.toString() : null);
             }
 
-            // Roles từ authorities
             info.put("roles", auth.getAuthorities().stream()
                     .map(a -> a.getAuthority()).toList());
 
-            // Nếu cần thêm thông tin chi tiết, có thể load từ database
-            // Nhưng để giảm database calls, chỉ trả về thông tin từ token
-
-            ResponseDTO<java.util.Map<String, Object>> resp = ResponseDTO.<java.util.Map<String, Object>>builder()
+            ResponseDTO<Map<String, Object>> resp = ResponseDTO.<Map<String, Object>>builder()
                     .message("Current user retrieved")
                     .data(info)
                     .build();

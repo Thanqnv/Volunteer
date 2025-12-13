@@ -4,6 +4,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -27,8 +34,18 @@ export default function LoginForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
+  const handleLoginSuccess = (role) => {
+    if (role === "ADMIN") {
+      router.push("/admin/dashboard");
+    } else if (role === "MANAGER") {
+      router.push("/manager/dashboard");
+    } else {
+      router.push("/user/dashboard");
+    }
+  };
+
   const { formData, loading, errorMessage, handleInputChange, handleSubmit } =
-    useLogin(() => router.push("/user/dashboard"));
+    useLogin(handleLoginSuccess);
 
   const handleGoogleSignIn = () => {
     if (!API_BASE_URL) {
@@ -41,7 +58,6 @@ export default function LoginForm() {
       return;
     }
 
-    // Ensure we do not end up with double slashes
     const sanitizedBase = API_BASE_URL.replace(/\/+$/, "");
     window.location.href = `${sanitizedBase}/oauth2/authorization/google`;
   };
@@ -54,10 +70,10 @@ export default function LoginForm() {
       <Card className="w-full max-w-md bg-white shadow-xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-3xl font-bold text-center text-green-500">
-            Chào Mừng Trở Lại
+            Chào mừng trở lại
           </CardTitle>
           <CardDescription className="text-center">
-            Nhập thông tin đăng nhập để truy cập tài khoản của bạn
+            Nhập thông tin để đăng nhập
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,6 +97,31 @@ export default function LoginForm() {
                 onChange={handleInputChange}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="role"
+                className="text-sm font-medium text-gray-700"
+              >
+                Vai trò
+              </Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  handleInputChange({ target: { name: "role", value } })
+                }
+              >
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Chọn vai trò" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VOLUNTEER">Volunteer</SelectItem>
+                  <SelectItem value="MANAGER">Manager</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label
                 htmlFor="password"
@@ -124,7 +165,7 @@ export default function LoginForm() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-muted-foreground">hoặc</span>
+              <span className="bg-white px-2 text-muted-foreground">hoac</span>
             </div>
           </div>
           <Button

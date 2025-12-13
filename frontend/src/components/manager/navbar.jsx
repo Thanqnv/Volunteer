@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -33,6 +33,22 @@ export default function Navbar({ onCollapse }) {
     if (onCollapse) onCollapse(newCollapsed);
   }
 
+  useEffect(() => {
+    const updateBodyOffset = () => {
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
+      const width = isDesktop ? (isCollapsed ? 80 : 256) : 0
+      document.body.style.paddingLeft = `${width}px`
+      document.documentElement.style.setProperty('--sidebar-offset', `${width}px`)
+    }
+    updateBodyOffset()
+    window.addEventListener('resize', updateBodyOffset)
+    return () => {
+      document.body.style.paddingLeft = ''
+      document.documentElement.style.removeProperty('--sidebar-offset')
+      window.removeEventListener('resize', updateBodyOffset)
+    }
+  }, [isCollapsed])
+
   return (
     <>
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-zinc-900 border-b border-zinc-800 shadow-xl">
@@ -51,7 +67,7 @@ export default function Navbar({ onCollapse }) {
 
       {isMobileMenuOpen && <div className="lg:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setIsMobileMenuOpen(false)} />}
 
-      <div className={`hidden lg:block h-screen bg-zinc-900 text-zinc-400 shadow-2xl border-r border-zinc-800/50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <div className={`hidden lg:flex lg:fixed lg:top-0 lg:left-0 lg:bottom-0 lg:z-40 h-screen flex-col bg-zinc-900 text-zinc-400 shadow-2xl border-r border-zinc-800/50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
         <div className={`border-b border-zinc-800/50 backdrop-blur-sm ${isCollapsed ? 'p-4' : 'p-6'}`}>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
@@ -63,7 +79,7 @@ export default function Navbar({ onCollapse }) {
             {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </button>
         </div>
-        <nav className={`space-y-1 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+        <nav className={`space-y-1 flex-1 ${isCollapsed ? 'p-2' : 'p-4'}`}>
           {navItems.map((item) => (
             <Link
               key={item.name}

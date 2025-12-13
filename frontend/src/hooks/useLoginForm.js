@@ -5,9 +5,13 @@ import { toast } from "@/hooks/use-toast";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
-export const useLogin = (onSuccess) => {
+export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
   const { login } = useAuth();
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    role: initialRole,
+  });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -42,7 +46,6 @@ export const useLogin = (onSuccess) => {
 
       const data = await response.json().catch(() => ({}));
 
-      // Các thông điệp server có thể nằm ở `message` hoặc `data` theo ResponseDTO
       const serverMessage =
         data?.message ||
         (Array.isArray(data?.data)
@@ -52,10 +55,11 @@ export const useLogin = (onSuccess) => {
 
       if (!response.ok) {
         const message =
-          serverMessage || "Đăng nhập thất bại. Kiểm tra email/mật khẩu.";
+          serverMessage ||
+          "Dang nhap that bai. Kiem tra email/mat khau/role duoc chon.";
         setErrorMessage(message);
         toast({
-          title: "Lỗi đăng nhập",
+          title: "Loi dang nhap",
           description: message,
           variant: "destructive",
         });
@@ -68,22 +72,24 @@ export const useLogin = (onSuccess) => {
         data?.data?.token ||
         data?.token;
       if (!token) {
-        const message = serverMessage || "Không nhận được token từ server.";
+        const message =
+          serverMessage || "Khong nhan duoc token tu server sau khi dang nhap.";
         setErrorMessage(message);
         toast({
-          title: "Lỗi đăng nhập",
+          title: "Loi dang nhap",
           description: message,
           variant: "destructive",
         });
         return;
       }
 
-      login(token);
+      const resolvedRole = data?.data?.role || data?.role || formData.role;
+      login(token, resolvedRole);
       toast({
-        title: serverMessage || "Đăng nhập thành công",
-        description: "Chào mừng bạn trở lại.",
+        title: serverMessage || "Dang nhap thanh cong",
+        description: "Chao mung ban tro lai.",
       });
-      onSuccess && onSuccess();
+      onSuccess && onSuccess(resolvedRole, data);
     } catch (error) {
       console.error("Login error:", error);
       const message =

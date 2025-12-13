@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Role;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.UserRoleType;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RoleRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 
@@ -27,8 +28,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     public CustomOAuth2UserService(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder
-    ) {
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -43,7 +43,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
 
-        // Trường hợp Google trả email trong mảng "emails"
         if (email == null) {
             Object emailsAttr = oAuth2User.getAttribute("emails");
             if (emailsAttr instanceof java.util.List<?> emailsList && !emailsList.isEmpty()) {
@@ -61,16 +60,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException("Email not found from OAuth2 provider");
         }
 
-        // Tìm user trong DB
         User user = userRepository.findByEmailIgnoreCaseWithRoleOptional(email).orElse(null);
 
         if (user == null) {
-            // Chưa có thì tạo mới
             user = new User();
             user.setEmail(email);
             user.setName((name != null && !name.isBlank()) ? name : email);
             user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
             user.setIsActive(Boolean.TRUE);
+            user.setAccountType(UserRoleType.VOLUNTEER);
 
             Role volunteerRole = roleRepository.findByRoleName("VOLUNTEER")
                     .orElseThrow(() -> new IllegalStateException("Default role VOLUNTEER not found"));
@@ -78,21 +76,21 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
             userRepository.save(user);
         } else if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            // Có user nhưng chưa có role
             Role volunteerRole = roleRepository.findByRoleName("VOLUNTEER")
                     .orElseThrow(() -> new IllegalStateException("Default role VOLUNTEER not found"));
             user.getRoles().add(volunteerRole);
+            if (user.getAccountType() == null) {
+                user.setAccountType(UserRoleType.VOLUNTEER);
+            }
             userRepository.save(user);
         }
 
-        final User finalUser = user;
         final String finalEmail = email;
 
-        // Trả về OAuth2User custom, getName() = email (rất quan trọng)
         return new OAuth2User() {
             @Override
-            public <A> A getAttribute(String name) {
-                return oAuth2User.getAttribute(name);
+            public <A> A getAttribute(String attributeName) {
+                return oAuth2User.getAttribute(attributeName);
             }
 
             @Override
@@ -107,7 +105,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
             @Override
             public String getName() {
-                // ⭐ RẤT QUAN TRỌNG: authentication.getName() = email
                 return finalEmail;
             }
         };

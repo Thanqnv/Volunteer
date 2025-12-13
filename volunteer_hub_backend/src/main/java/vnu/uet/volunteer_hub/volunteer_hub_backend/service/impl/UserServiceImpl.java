@@ -12,6 +12,7 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.RegistrationReque
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.BaseEntity;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Role;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.UserRoleType;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RoleRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.UserService;
@@ -43,13 +44,24 @@ public class UserServiceImpl implements UserService {
         if (registrationRequest.getName() == null || registrationRequest.getName().isBlank()) {
             throw new IllegalArgumentException("Ho ten khong duoc de trong!");
         }
+
+        UserRoleType requestedRole = UserRoleType.fromString(registrationRequest.getRole());
+        if (requestedRole == null) {
+            throw new IllegalArgumentException("Vai tro khong hop le");
+        }
+        if (requestedRole == UserRoleType.ADMIN) {
+            throw new IllegalArgumentException("Khong duoc tu dang ky vai tro ADMIN");
+        }
+
         User user = new User();
         user.setEmail(registrationRequest.getEmail().toLowerCase());
-        user.setName(registrationRequest.getName());
+        user.setName(registrationRequest.getName().trim());
         user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
+        user.setAccountType(requestedRole);
 
-        Role userRole = roleRepository.findByRoleName("VOLUNTEER")
-                .orElseThrow(() -> new RuntimeException("VOLUNTEER role not found in the database"));
+        String roleName = requestedRole == UserRoleType.MANAGER ? "MANAGER" : "VOLUNTEER";
+        Role userRole = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new RuntimeException(roleName + " role not found in the database"));
         user.getRoles().add(userRole);
 
         logger.info("Attempting to save user: {}", user.getEmail());

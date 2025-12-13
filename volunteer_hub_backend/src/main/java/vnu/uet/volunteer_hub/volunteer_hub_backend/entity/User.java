@@ -25,9 +25,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.UserRoleType;
 
 @Getter
 @Setter
@@ -49,6 +52,10 @@ public class User extends BaseEntity implements UserDetails {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = Boolean.TRUE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_type", length = 20, nullable = false, columnDefinition = "varchar(20) default 'VOLUNTEER'")
+    private UserRoleType accountType = UserRoleType.VOLUNTEER;
 
     @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
@@ -83,6 +90,9 @@ public class User extends BaseEntity implements UserDetails {
     public void prePersist() {
         if (isActive == null) {
             isActive = Boolean.TRUE;
+        }
+        if (accountType == null) {
+            accountType = UserRoleType.VOLUNTEER;
         }
     }
 

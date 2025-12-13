@@ -11,6 +11,7 @@ export const useSignup = (onSuccess) => {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "VOLUNTEER",
   });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -52,6 +53,17 @@ export const useSignup = (onSuccess) => {
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
+      if (formData.role === "ADMIN") {
+        const message = "Khong the tu dang ky vai tro ADMIN.";
+        setErrorMessage(message);
+        toast({
+          title: "Loi dang ky",
+          description: message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,6 +72,7 @@ export const useSignup = (onSuccess) => {
           password: formData.password,
           confirmPassword: formData.confirmPassword,
           name: fullName,
+          role: formData.role,
         }),
       });
 
