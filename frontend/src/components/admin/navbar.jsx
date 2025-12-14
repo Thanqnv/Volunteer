@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { LayoutDashboard, Plane, CalendarDays, User, Users, UserPen, FileText, TicketCheck, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, HandHeart, CalendarDays, User, Users, UserPen, FileText, TicketCheck, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const navItems = [
   {
@@ -59,7 +59,7 @@ export default function Navbar({ onCollapse }) {
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-green-500 rounded">
-              <Plane className="w-5 h-5 text-white" />
+              <handHeart className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-lg font-semibold text-white">Volunteer Hub</h1>
           </div>
@@ -118,7 +118,7 @@ export default function Navbar({ onCollapse }) {
           }`}>
           <div className="flex items-center gap-3 group">
             <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-lg shadow-green-500/20 group-hover:shadow-green-500/40 transition-all duration-300 group-hover:scale-110 flex-shrink-0">
-              <Plane className="w-5 h-5 text-white" />
+              <HandHeart className="w-5 h-5 text-white" />
             </div>
             <h1 className={`text-lg font-bold text-white tracking-tight transition-all duration-300 whitespace-nowrap ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
               }`}>
