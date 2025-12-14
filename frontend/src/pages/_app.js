@@ -1,21 +1,38 @@
-import '../styles/index.css';
+import "../styles/index.css";
 import MainLayout from "../layouts/MainLayout";
 import AdminLayout from "../layouts/AdminLayout";
 import ManagerLayout from "../layouts/ManagerLayout";
 import UserLayout from "../layouts/UserLayout";
-import { AuthProvider } from '../context/AuthContext';
+import { AuthProvider } from "../context/AuthContext";
+import { useEffect } from "react";
 import { useRouter } from "next/router";
-import { useAppLogic } from '../hooks/useAppLogic';
+import { useAppLogic } from "../hooks/useAppLogic";
 import { Toaster } from "@/components/ui/toaster";
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
   const { showScrollTopButton, handleScrollToTop } = useAppLogic(router);
 
-  const isValidAdminPage = router.pathname.startsWith('/admin');
-  const isAdminLoginPage = router.pathname === '/admin';
-  const isUserPage = router.pathname.startsWith('/user');
-  const isManagerPage = router.pathname.startsWith('/manager');
+  const isValidAdminPage = router.pathname.startsWith("/admin");
+  const isAdminLoginPage = router.pathname === "/admin";
+  const isUserPage = router.pathname.startsWith("/user");
+  const isManagerPage = router.pathname.startsWith("/manager");
+
+  // Ensure no stray service workers interfere with routing/OAuth in dev
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      // Unregister all existing service workers for this origin
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => regs.forEach((reg) => reg.unregister()))
+        .catch(() => {});
+
+      // Also try to unregister the active one
+      navigator.serviceWorker.ready
+        .then((reg) => reg.unregister())
+        .catch(() => {});
+    }
+  }, []);
 
   return (
     <AuthProvider>
@@ -28,7 +45,7 @@ function MyApp({ Component, pageProps }) {
           </AdminLayout>
         )
       ) : isManagerPage ? (
-        router.pathname === '/manager' ? (
+        router.pathname === "/manager" ? (
           <Component {...pageProps} />
         ) : (
           <ManagerLayout>

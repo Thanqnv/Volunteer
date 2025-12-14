@@ -5,6 +5,9 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+
 export default function OAuthCallback() {
   const router = useRouter();
   const { login } = useAuth();
@@ -16,15 +19,53 @@ export default function OAuthCallback() {
     const { token, error } = router.query;
 
     if (typeof token === "string" && token) {
+      // Persist token first
       login(token);
-      setStatus("Login successful. Redirecting...");
+      setStatus("Login successful. Fetching user info...");
 
-      // Redirect to dashboard after we persist the token
-      const timer = setTimeout(() => {
-        router.replace("/user/dashboard");
-      }, 600);
+      // Fetch current user to determine role-based redirect
+      (async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          });
 
-      return () => clearTimeout(timer);
+          if (!res.ok) throw new Error(`status ${res.status}`);
+          const payload = await res.json();
+          const roles = payload?.data?.roles || payload?.roles || [];
+          let role = null;
+          if (Array.isArray(roles)) {
+            const upper = roles.map((r) => String(r).toUpperCase());
+            if (upper.find((r) => r.includes("ADMIN"))) role = "ADMIN";
+            else if (upper.find((r) => r.includes("MANAGER"))) role = "MANAGER";
+            else role = "VOLUNTEER";
+          }
+
+          // Update role in context/localStorage via login()
+          if (role) {
+            login(token, role);
+          }
+
+          // Role-based redirect
+          if (role === "ADMIN") {
+            router.replace("/admin/dashboard");
+          } else if (role === "MANAGER") {
+            router.replace("/manager/dashboard");
+          } else {
+            router.replace("/user/dashboard");
+          }
+        } catch (e) {
+          // Fallback redirect
+          setStatus("Could not fetch user info. Redirecting...");
+          router.replace("/user/dashboard");
+        }
+      })();
+
+      return;
     }
 
     const errorMessage =
