@@ -6,8 +6,8 @@ import { Eye, EyeOff } from "lucide-react";
 import { useSignup } from "@/hooks/useSignupForm";
 import { useAuth } from "@/context/AuthContext";
 
-import { auth, googleProvider } from "@/configs/firebaseConfig";
-import { signInWithPopup } from "firebase/auth";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -24,25 +24,11 @@ export default function SignupForm() {
     handleSubmit,
   } = useSignup(() => router.push("/login"));
 
-  // Google signup / login
-  const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const token = await user.getIdToken();
-
-      login(token);
-
-      // Sau Google, BE sẽ quyết định role → tạm redirect theo lựa chọn UI
-      const role = formData.role || "VOLUNTEER";
-      if (role === "MANAGER") {
-        router.push("/manager/dashboard");
-      } else {
-        router.push("/user/dashboard");
-      }
-    } catch (error) {
-      console.error("Google sign-in error:", error);
-    }
+  // Google signup / login via backend OAuth2
+  const handleGoogleLogin = () => {
+    const base = API_BASE_URL.replace(/\/$/, "");
+    const authUrl = `${base}/oauth2/authorization/google`;
+    window.location.href = authUrl;
   };
 
   return (
@@ -169,7 +155,6 @@ export default function SignupForm() {
             </form>
 
             <div className="my-6 text-center text-sm text-gray-500">hoặc</div>
-
             <button
               onClick={handleGoogleLogin}
               className="w-full py-3 border rounded-xl"
@@ -178,7 +163,7 @@ export default function SignupForm() {
             </button>
 
             <p className="mt-6 text-center text-sm">
-              Đã có tài khoản?{" "}
+              Chưa có tài khoản?{" "}
               <Link href="/login" className="text-green-600 font-semibold">
                 Đăng nhập
               </Link>
@@ -217,3 +202,4 @@ export default function SignupForm() {
     </div>
   );
 }
+

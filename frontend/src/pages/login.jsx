@@ -6,8 +6,8 @@ import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "@/hooks/useLoginForm";
 import { useAuth } from "@/context/AuthContext";
 
-import { auth, googleProvider } from "@/configs/firebaseConfig";
-import { signInWithPopup } from "firebase/auth";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -41,21 +41,11 @@ export default function LoginForm() {
     }
   }, [router.query.role, setFieldValue]);
 
-  // Google Login (Firebase)
-  const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const token = await user.getIdToken();
-
-      // Lưu token (BE sẽ tự map user)
-      login(token);
-
-      const role = formData.role || "VOLUNTEER";
-      handleLoginSuccess(role);
-    } catch (error) {
-      console.error("Google sign-in error:", error);
-    }
+  // Google Login via backend OAuth2
+  const handleGoogleLogin = () => {
+    const base = API_BASE_URL.replace(/\/$/, "");
+    const authUrl = `${base}/oauth2/authorization/google`;
+    window.location.href = authUrl;
   };
 
   return (
@@ -190,3 +180,4 @@ export default function LoginForm() {
     </div>
   );
 }
+
