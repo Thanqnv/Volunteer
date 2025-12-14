@@ -217,6 +217,32 @@ public class EventServiceImpl implements EventService {
      * PARTICIPATION
      * ============================================================ */
 
+        @Override
+        @Transactional(readOnly = true)
+        public List<ParticipantResponseDTO> getParticipants(UUID eventId) {
+        // Ensure event exists
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
+
+        // Fetch all registrations for the event and map to DTO
+        List<Registration> regs = registrationRepository.findByEventId(eventId);
+
+        return regs.stream()
+            .map(r -> ParticipantResponseDTO.builder()
+                .userId(r.getVolunteer() != null ? r.getVolunteer().getId() : null)
+                .userName(r.getVolunteer() != null ? r.getVolunteer().getName() : null)
+                .email(r.getVolunteer() != null ? r.getVolunteer().getEmail() : null)
+                .registrationStatus(r.getRegistrationStatus() != null
+                    ? r.getRegistrationStatus().toString() : null)
+                .registeredAt(r.getCreatedAt())
+                .isCompleted(r.getRegistrationStatus() != null
+                    && r.getRegistrationStatus().equals(RegistrationStatus.COMPLETED))
+                .isWithdrawn(r.getRegistrationStatus() != null
+                    && r.getRegistrationStatus().equals(RegistrationStatus.WITHDRAWN))
+                .build())
+            .collect(Collectors.toList());
+        }
+
     @Override
     @Transactional
     public JoinEventResponse joinEvent(UUID eventId, UUID userId) {

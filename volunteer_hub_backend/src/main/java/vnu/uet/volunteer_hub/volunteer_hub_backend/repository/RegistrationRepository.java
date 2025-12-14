@@ -18,6 +18,13 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
 
     Optional<Registration> findByEventIdAndVolunteerId(UUID eventId, UUID volunteerId);
 
+    /**
+     * Lấy tất cả registrations thuộc một sự kiện.
+     * @param eventId ID của sự kiện
+     * @return Danh sách registrations
+     */
+    List<Registration> findByEventId(UUID eventId);
+
     long countByEventIdAndRegistrationStatus(UUID eventId, RegistrationStatus registrationStatus);
 
     /**
