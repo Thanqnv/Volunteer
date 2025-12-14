@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Configuration để enable asynchronous method execution trong Spring.
@@ -17,7 +18,7 @@ public class AsyncConfig {
 
     /**
      * Tạo ThreadPoolTaskExecutor để xử lý các @Async methods.
-     * 
+     *
      * @return configured executor
      */
     @Bean(name = "taskExecutor")
@@ -29,5 +30,16 @@ public class AsyncConfig {
         executor.setThreadNamePrefix("async-");
         executor.initialize();
         return executor;
+    }
+
+    /**
+     * Tạo RestTemplate bean để thực hiện HTTP requests.
+     * Sử dụng cho Web Push notifications và các API calls khác.
+     *
+     * @return configured RestTemplate
+     */
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }

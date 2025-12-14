@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreateEventRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.RegistrationCompletionRequest;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.UpdateEventRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.CheckInResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.EventResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.JoinEventResponse;
@@ -24,6 +26,7 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EventService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.PostRankingService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,6 +81,119 @@ public class EventServiceImpl implements EventService {
     @Override
     public List<Event> getApprovedEvents() {
         return eventRepository.findAllByAdminApprovalStatusAndIsArchived(EventApprovalStatus.APPROVED, Boolean.FALSE);
+    }
+
+    @Override
+    @Transactional
+    public EventResponseDTO createEvent(CreateEventRequest request, UUID creatorId) {
+        // Validate creator exists
+        User creator = userRepository.findById(creatorId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + creatorId));
+
+        // Validate startTime < endTime
+        if (!request.getStartTime().isBefore(request.getEndTime())) {
+            throw new IllegalArgumentException("Start time must be before end time");
+        }
+
+        // Create event entity
+        Event event = new Event();
+        event.setCreatedBy(creator);
+        event.setTitle(request.getTitle());
+        event.setDescription(request.getDescription());
+        event.setLocation(request.getLocation());
+        event.setStartTime(request.getStartTime());
+        event.setEndTime(request.getEndTime());
+        event.setMaxVolunteers(request.getMaxVolunteers());
+        event.setAdminApprovalStatus(EventApprovalStatus.PENDING);
+        event.setIsArchived(false);
+
+        Event savedEvent = eventRepository.save(event);
+
+        return EventResponseDTO.builder()
+                .eventId(savedEvent.getId())
+                .title(savedEvent.getTitle())
+                .description(savedEvent.getDescription())
+                .location(savedEvent.getLocation())
+                .startTime(savedEvent.getStartTime())
+                .endTime(savedEvent.getEndTime())
+                .maxVolunteers(savedEvent.getMaxVolunteers())
+                .createdByName(creator.getName())
+                .adminApprovalStatus(savedEvent.getAdminApprovalStatus().toString())
+                .createdAt(savedEvent.getCreatedAt())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public EventResponseDTO updateEvent(UUID eventId, UpdateEventRequest request, UUID updaterId) {
+        // Validate event exists
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
+
+        // Validate updater exists
+        userRepository.findById(updaterId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + updaterId));
+
+        // Check ownership - only creator can update
+        if (!event.getCreatedBy().getId().equals(updaterId)) {
+            throw new IllegalStateException("Only the event creator can update this event");
+        }
+
+        // Check if event has already started
+        if (event.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Cannot update event that has already started");
+        }
+
+        // Update fields if provided
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+            event.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            event.setDescription(request.getDescription());
+        }
+        if (request.getLocation() != null) {
+            event.setLocation(request.getLocation());
+        }
+        if (request.getStartTime() != null) {
+            event.setStartTime(request.getStartTime());
+        }
+        if (request.getEndTime() != null) {
+            event.setEndTime(request.getEndTime());
+        }
+        if (request.getMaxVolunteers() != null) {
+            event.setMaxVolunteers(request.getMaxVolunteers());
+        }
+
+        // Validate startTime < endTime after updates
+        if (event.getStartTime() != null && event.getEndTime() != null
+                && !event.getStartTime().isBefore(event.getEndTime())) {
+            throw new IllegalArgumentException("Start time must be before end time");
+        }
+
+        Event savedEvent = eventRepository.save(event);
+
+        return EventResponseDTO.builder()
+                .eventId(savedEvent.getId())
+                .title(savedEvent.getTitle())
+                .description(savedEvent.getDescription())
+                .location(savedEvent.getLocation())
+                .startTime(savedEvent.getStartTime())
+                .endTime(savedEvent.getEndTime())
+                .maxVolunteers(savedEvent.getMaxVolunteers())
+                .createdByName(savedEvent.getCreatedBy().getName())
+                .adminApprovalStatus(savedEvent.getAdminApprovalStatus().toString())
+                .createdAt(savedEvent.getCreatedAt())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Event> getEventsWithFilters(String searchQuery, String category,
+            LocalDateTime fromDate, LocalDateTime toDate,
+            EventApprovalStatus status) {
+        // Note: category parameter is reserved for future use when Event entity has a
+        // category field
+        return eventRepository.findEventsWithFilters(searchQuery, fromDate, toDate, status);
     }
 
     @Override

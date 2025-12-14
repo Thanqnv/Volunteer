@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -133,8 +134,28 @@ public class PostServiceImpl implements PostService {
                     .collect(Collectors.toList());
             List<Post> posts = postRepository.findAllWithAuthorAndEventByIdIn(uuids);
 
-            // filter by visibility
-            List<Post> visible = posts.stream().filter(p -> isVisibleToUser(p, viewerId)).toList();
+            // Batch fetch registrations to fix N+1 problem
+            // Collect all event IDs from posts that have events
+            List<UUID> eventIds = posts.stream()
+                    .filter(p -> p.getEvent() != null)
+                    .map(p -> p.getEvent().getId())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            // Fetch all registrations for these events in ONE query
+            Map<UUID, Set<RegistrationStatus>> userRegistrationsByEventId = registrationRepository
+                    .findByEventIdInAndVolunteerId(eventIds, viewerId)
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            reg -> reg.getEvent().getId(),
+                            Collectors.mapping(
+                                    reg -> reg.getRegistrationStatus(),
+                                    Collectors.toSet())));
+
+            // filter by visibility using batch-fetched registrations
+            List<Post> visible = posts.stream()
+                    .filter(p -> isVisibleToUserWithCache(p, viewerId, userRegistrationsByEventId))
+                    .toList();
 
             // compute personalized score for each
             List<ScoredPostDTO> personalized = visible.stream().map(p -> {
@@ -170,6 +191,37 @@ public class PostServiceImpl implements PostService {
                         || reg.getRegistrationStatus().equals(RegistrationStatus.CHECKED_IN)
                         || reg.getRegistrationStatus().equals(RegistrationStatus.COMPLETED))
                 .isPresent();
+    }
+
+    /**
+     * Optimized visibility check using pre-fetched registrations map.
+     * Fixes N+1 problem by avoiding individual DB queries per post.
+     * 
+     * @param p                      Post to check
+     * @param viewerId               Viewer's user ID
+     * @param registrationsByEventId Pre-fetched map of eventId -> Set of
+     *                               RegistrationStatus
+     * @return true if post is visible to user
+     */
+    private boolean isVisibleToUserWithCache(Post p, UUID viewerId,
+            Map<UUID, Set<RegistrationStatus>> registrationsByEventId) {
+        if (p.getEvent() == null)
+            return true;
+        Event ev = p.getEvent();
+        if (ev.getAdminApprovalStatus() != null
+                && ev.getAdminApprovalStatus().name().equalsIgnoreCase("APPROVED"))
+            return true;
+        if (p.getAuthor() != null && p.getAuthor().getId() != null && p.getAuthor().getId().equals(viewerId))
+            return true;
+
+        // Use pre-fetched registrations instead of querying DB
+        Set<RegistrationStatus> statuses = registrationsByEventId.get(p.getEvent().getId());
+        if (statuses == null) {
+            return false;
+        }
+        return statuses.contains(RegistrationStatus.APPROVED)
+                || statuses.contains(RegistrationStatus.CHECKED_IN)
+                || statuses.contains(RegistrationStatus.COMPLETED);
     }
 
     private ScoredPostDTO mapToDTO(Post p, Double totalScoreOverride, Optional<User> viewer) {

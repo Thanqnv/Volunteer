@@ -1,5 +1,6 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,8 +16,19 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.EventApprovalStat
 public interface EventRepository extends JpaRepository<Event, UUID> {
     List<Event> findAllByAdminApprovalStatusAndIsArchived(EventApprovalStatus status, Boolean isArchived);
 
-    @Query(value = "SELECT * FROM events e WHERE e.title ILIKE CONCAT('%', :keyword, '%') ORDER BY similarity(e.title, :keyword) DESC", nativeQuery = true)
-    List<Event> searchByTitle(@Param("keyword") String keyword);
+    @Query("SELECT e FROM Event e WHERE " +
+            "(:searchQuery IS NULL OR LOWER(e.title) LIKE LOWER(CONCAT('%', :searchQuery, '%')) " +
+            "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :searchQuery, '%'))) " +
+            "AND (:fromDate IS NULL OR e.startTime >= :fromDate) " +
+            "AND (:toDate IS NULL OR e.endTime <= :toDate) " +
+            "AND (:status IS NULL OR e.adminApprovalStatus = :status) " +
+            "AND e.isArchived = false " +
+            "ORDER BY e.startTime DESC")
+    List<Event> findEventsWithFilters(
+            @Param("searchQuery") String searchQuery,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            @Param("status") EventApprovalStatus status);
 
     @Query(value = """
             SELECT e.event_id as eventId, e.title

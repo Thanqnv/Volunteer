@@ -1,17 +1,24 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.api;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreateEventRequest;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.UpdateEventRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.CheckInResponseDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.EventResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.JoinEventResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ParticipantResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Event;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.EventApprovalStatus;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EventService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.UserService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,17 +32,139 @@ public class EventAPI {
     private final UserService userService;
 
     /**
-     * Get all approved events for creating posts.
-     * GET /api/events
-     * Response: List of approved events
+     * Create a new event.
+     * POST /api/events
+     * Request body: CreateEventRequest
+     * Response: EventResponseDTO
+     * <p>
+     * TODO: Sau khi có authentication, lấy userId từ SecurityContext
+     */
+    @PostMapping("/{creatorId}")
+    public ResponseEntity<?> createEvent(
+            @Valid @RequestBody CreateEventRequest request,
+            @PathVariable UUID creatorId) { // TODO: Remove after auth, get from SecurityContext
+        try {
+            // Validate startTime < endTime
+            if (request.getStartTime() != null && request.getEndTime() != null
+                    && !request.getStartTime().isBefore(request.getEndTime())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ResponseDTO.builder()
+                                .message("Thời gian kết thúc phải sau thời gian bắt đầu")
+                                .build());
+            }
+
+            // TODO: Get from SecurityContext after auth
+            // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            // UUID creatorId = userService.getViewerIdFromAuthentication(auth);
+
+            EventResponseDTO response = eventService.createEvent(request, creatorId);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ResponseDTO.<EventResponseDTO>builder()
+                            .message("Event created successfully")
+                            .data(response)
+                            .build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ResponseDTO.builder()
+                            .message("Invalid input")
+                            .detail(e.getMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ResponseDTO.builder()
+                            .message("Failed to create event")
+                            .detail(e.getMessage())
+                            .build());
+        }
+    }
+
+    /**
+     * Update an existing event.
+     * PUT /api/events/{id}
+     * Request body: UpdateEventRequest
+     * Response: EventResponseDTO
+     * Only owner/manager can update, and only before event starts.
+     * <p>
+     * TODO: Sau khi có authentication, lấy userId từ SecurityContext
+     */
+    @PutMapping("/{id}/{updaterId}")
+    public ResponseEntity<?> updateEvent(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateEventRequest request,
+            @PathVariable UUID updaterId) { // TODO: Remove after auth, get from SecurityContext
+        try {
+            // Validate startTime < endTime if both provided
+            if (request.getStartTime() != null && request.getEndTime() != null
+                    && !request.getStartTime().isBefore(request.getEndTime())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ResponseDTO.builder()
+                                .message("Thời gian kết thúc phải sau thời gian bắt đầu")
+                                .build());
+            }
+
+            // TODO: Get from SecurityContext after auth
+            // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            // UUID updaterId = userService.getViewerIdFromAuthentication(auth);
+
+            EventResponseDTO response = eventService.updateEvent(id, request, updaterId);
+
+            return ResponseEntity.ok(
+                    ResponseDTO.<EventResponseDTO>builder()
+                            .message("Event updated successfully")
+                            .data(response)
+                            .build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ResponseDTO.builder()
+                            .message("Invalid input")
+                            .detail(e.getMessage())
+                            .build());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ResponseDTO.builder()
+                            .message(e.getMessage())
+                            .build());
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ResponseDTO.builder()
+                            .message("Event not found")
+                            .detail(e.getMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ResponseDTO.builder()
+                            .message("Failed to update event")
+                            .detail(e.getMessage())
+                            .build());
+        }
+    }
+
+    /**
+     * Get all approved events with optional filters.
+     * GET /api/events?q=search&category=...&fromDate=...&toDate=...&status=...
+     * Response: List of events matching the criteria
      */
     @GetMapping
-    public ResponseEntity<?> getApprovedEvents() {
+    public ResponseEntity<?> getEvents(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
+            @RequestParam(required = false) EventApprovalStatus status) {
         try {
-            List<Event> approvedEventsList = eventService.getApprovedEvents();
+            List<Event> eventsList;
+
+            // If any filter is provided, use filtered search
+            if (q != null || category != null || fromDate != null || toDate != null || status != null) {
+                eventsList = eventService.getEventsWithFilters(q, category, fromDate, toDate, status);
+            } else {
+                // Default: get approved events only
+                eventsList = eventService.getApprovedEvents();
+            }
 
             // Map to simple DTO
-            List<EventSimpleDTO> approvedEvents = approvedEventsList.stream()
+            List<EventSimpleDTO> events = eventsList.stream()
                     .map(e -> new EventSimpleDTO(
                             e.getId().toString(),
                             e.getTitle(),
@@ -45,7 +174,7 @@ public class EventAPI {
 
             return ResponseEntity.ok(ResponseDTO.<List<EventSimpleDTO>>builder()
                     .message("Events retrieved successfully")
-                    .data(approvedEvents)
+                    .data(events)
                     .build());
         } catch (Exception e) {
             return ResponseEntity.internalServerError()

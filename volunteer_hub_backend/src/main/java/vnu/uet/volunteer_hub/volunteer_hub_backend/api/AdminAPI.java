@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.RequiredArgsConstructor;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EventService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.PostRankingService;
@@ -30,6 +31,7 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.service.TopPostsCacheService;
 
 @RestController
 @RequestMapping("/api/admin")
+@RequiredArgsConstructor
 public class AdminAPI {
 
     private final EventService eventService;
@@ -39,19 +41,6 @@ public class AdminAPI {
     private final RegistrationRepository registrationRepository;
     private final TopPostsCacheService topPostsCacheService;
     private final PostRankingService postRankingService;
-
-    public AdminAPI(EventService eventService, UserService userService, UserRepository userRepository,
-            EventRepository eventRepository, RegistrationRepository registrationRepository,
-            TopPostsCacheService topPostsCacheService,
-            PostRankingService postRankingService) {
-        this.eventService = eventService;
-        this.userService = userService;
-        this.userRepository = userRepository;
-        this.eventRepository = eventRepository;
-        this.registrationRepository = registrationRepository;
-        this.topPostsCacheService = topPostsCacheService;
-        this.postRankingService = postRankingService;
-    }
 
     @PutMapping("/events/{eventId}/approve")
     // @PreAuthorize("hasRole('ADMIN')")
