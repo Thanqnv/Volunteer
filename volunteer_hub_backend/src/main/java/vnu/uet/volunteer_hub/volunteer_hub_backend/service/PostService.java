@@ -18,7 +18,7 @@ public interface PostService {
 
     /**
      * Update a post by ID.
-     * 
+     * <p>
      * TODO (Future):
      * - Add authorization check: only author or admin can update
      * - Add audit logging for post updates
@@ -27,11 +27,11 @@ public interface PostService {
      * @param request the update request
      * @return updated post as ScoredPostDTO
      */
-    ScoredPostDTO updatePost(UUID postId, UpdatePostRequest request);
+    ScoredPostDTO updatePost(UUID postId, UpdatePostRequest request, UUID authorId);
 
     /**
      * Delete a post by ID.
-     * 
+     * <p>
      * TODO (Future):
      * - Add authorization check: only author or admin can delete
      * - Add soft delete option instead of hard delete
@@ -39,11 +39,11 @@ public interface PostService {
      * 
      * @param postId the post ID
      */
-    void deletePost(UUID postId);
+    void deletePost(UUID postId, UUID authorId);
 
     /**
      * Get posts by a specific user.
-     * 
+     * <p>
      * TODO (Future):
      * - Add visibility check: viewer should only see visible posts
      * - Add filtering/sorting options
@@ -54,4 +54,15 @@ public interface PostService {
      * @return paginated posts
      */
     Page<ScoredPostDTO> getPostsByUserId(UUID userId, int page, int size);
+
+    /**
+     * Like a post by a viewer.
+     * 
+     * @param postId   the post id
+     * @param viewerId the viewer (user) id who likes the post
+     * @return updated PostDetailResponse
+     */
+    PostDetailResponse likePost(UUID postId, UUID viewerId,
+            vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.ReactionType reactionType);
+
 }
