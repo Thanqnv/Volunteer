@@ -1,42 +1,52 @@
-import '../styles/index.css';
+import "../styles/index.css";
+
 import MainLayout from "../layouts/MainLayout";
 import AdminLayout from "../layouts/AdminLayout";
-import UserLayout from "../layouts/UserLayout";
 import ManagerLayout from "../layouts/ManagerLayout";
-import { AuthProvider } from '../context/AuthContext';
+import UserLayout from "../layouts/UserLayout";
+
+import { AuthProvider } from "../context/AuthContext";
 import { useRouter } from "next/router";
-import { useAppLogic } from '../hooks/useAppLogic';
+import { useAppLogic } from "../hooks/useAppLogic";
 import { Toaster } from "@/components/ui/toaster";
-import { useEffect } from 'react';
-import Head from 'next/head';
-import useFirebaseNotification from '../hooks/useFirebaseNotification';
+import { useEffect } from "react";
+import Head from "next/head";
+import useFirebaseNotification from "../hooks/useFirebaseNotification";
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
   const { showScrollTopButton, handleScrollToTop } = useAppLogic(router);
+
+  // Firebase notification (foreground)
   useFirebaseNotification();
 
+  // Register service worker (for Firebase background notifications)
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          }, err => {
-            console.log('ServiceWorker registration failed: ', err);
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log(
+              "ServiceWorker registered with scope:",
+              registration.scope
+            );
+          })
+          .catch((err) => {
+            console.error("ServiceWorker registration failed:", err);
           });
       });
     }
   }, []);
 
+  // Route detection
+  const isAdminPage = router.pathname.startsWith("/admin");
+  const isAdminLoginPage = router.pathname === "/admin";
 
-  const isValidAdminPage = router.pathname.startsWith('/admin');
-  const isAdminLoginPage = router.pathname === '/admin';
-  const isManagerPage = router.pathname.startsWith('/manager');
-  const isManagerLoginPage = router.pathname === '/manager';
-  const isUserPage = router.pathname.startsWith('/user');
+  const isManagerPage = router.pathname.startsWith("/manager");
+  const isManagerLoginPage = router.pathname === "/manager";
 
-
+  const isUserPage = router.pathname.startsWith("/user");
 
   return (
     <AuthProvider>
@@ -44,7 +54,8 @@ function MyApp({ Component, pageProps }) {
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
       </Head>
-      {isValidAdminPage ? (
+
+      {isAdminPage ? (
         isAdminLoginPage ? (
           <Component {...pageProps} />
         ) : (
@@ -69,6 +80,7 @@ function MyApp({ Component, pageProps }) {
           <Component {...pageProps} />
         </MainLayout>
       )}
+
       <Toaster />
 
       {showScrollTopButton && (

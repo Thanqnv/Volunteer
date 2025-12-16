@@ -107,7 +107,10 @@ export default function Navbar() {
     },
   };
 
+  const logoutOffsetClass = isScrolled ? 'top-20' : 'top-28';
+
   return (
+    <>
     <motion.nav
       className="w-full flex items-center fixed top-0 z-50"
       initial={false}
@@ -389,6 +392,6 @@ export default function Navbar() {
         </AnimatePresence>
       </div>
     </motion.nav>
+    </>
   );
 }
-

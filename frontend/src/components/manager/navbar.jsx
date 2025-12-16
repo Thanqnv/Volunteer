@@ -1,34 +1,24 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
-import { LayoutDashboard, Calendar, Users, BellRing, UserCircle, Menu, X, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import {
+  LayoutDashboard,
+  Calendar,
+  Users,
+  BellRing,
+  UserCircle,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react'
 
 const navItems = [
-  {
-    name: 'Tổng quan',
-    href: '/manager/dashboard',
-    icon: LayoutDashboard
-  },
-  {
-    name: 'Quản lý sự kiện',
-    href: '/manager/events',
-    icon: Calendar
-  },
-  {
-    name: 'Quản lý nhóm',
-    href: '/manager/group',
-    icon: Users
-  },
-  {
-    name: 'Thông báo',
-    href: '/manager/notifications',
-    icon: BellRing
-  },
-  {
-    name: 'Hồ sơ cá nhân',
-    href: '/manager/profile',
-    icon: UserCircle
-  }
+  { name: 'Tổng quan', href: '/manager/dashboard', icon: LayoutDashboard },
+  { name: 'Quản lý sự kiện', href: '/manager/events', icon: Calendar },
+  { name: 'Quản lý nhóm', href: '/manager/group', icon: Users },
+  { name: 'Thông báo', href: '/manager/notifications', icon: BellRing },
+  { name: 'Hồ sơ cá nhân', href: '/manager/profile', icon: UserCircle }
 ]
 
 export default function ManagerNavbar({ onCollapse }) {
@@ -36,221 +26,146 @@ export default function ManagerNavbar({ onCollapse }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
+  // ===== giữ logic layout của bạn (rất quan trọng) =====
+  useEffect(() => {
+    const updateBodyOffset = () => {
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
+      const width = isDesktop ? (isCollapsed ? 80 : 256) : 0
+      document.body.style.paddingLeft = `${width}px`
+      document.documentElement.style.setProperty('--sidebar-offset', `${width}px`)
+    }
 
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false)
-  }
+    updateBodyOffset()
+    window.addEventListener('resize', updateBodyOffset)
+
+    return () => {
+      document.body.style.paddingLeft = ''
+      document.documentElement.style.removeProperty('--sidebar-offset')
+      window.removeEventListener('resize', updateBodyOffset)
+    }
+  }, [isCollapsed])
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(v => !v)
+  const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
   const toggleCollapse = () => {
-    const newCollapsed = !isCollapsed
-    setIsCollapsed(newCollapsed)
-    if (onCollapse) {
-      onCollapse(newCollapsed)
-    }
+    const next = !isCollapsed
+    setIsCollapsed(next)
+    onCollapse?.(next)
   }
 
   return (
     <>
-      {/* Mobile Header */}
+      {/* ===== Mobile Header ===== */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 border-b border-zinc-800/50 shadow-xl">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
-            {/* Logo/Icon */}
-            <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-lg shadow-green-500/20">
-              {/* Replace Plane with something generic or keep it if it's the brand */}
+            <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
               <LayoutDashboard className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-lg font-bold text-white tracking-tight">Volunteer Hub</h1>
+            <h1 className="text-lg font-bold text-white">Volunteer Hub</h1>
           </div>
           <button
             onClick={toggleMobileMenu}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all duration-300"
-            aria-label="Toggle menu"
+            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-lg"
           >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
+            {isMobileMenuOpen ? <X /> : <Menu />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* ===== Mobile Overlay ===== */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-black/60 z-40"
           onClick={closeMobileMenu}
         />
       )}
 
-      {/* Mobile Sidebar */}
+      {/* ===== Mobile Sidebar ===== */}
       <div
-        className={`
-                    lg:hidden fixed top-16 left-0 bottom-0 w-64 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 
-                    text-zinc-400 shadow-2xl border-r border-zinc-800/50 z-40
-                    transform transition-transform duration-300 ease-in-out
-                    ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-                `}
+        className={`lg:hidden fixed top-16 left-0 bottom-0 w-64 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 z-40 transition-transform ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
         <nav className="p-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = router.pathname.startsWith(item.href)
+          {navItems.map(item => {
+            const isActive =
+              router.pathname === item.href ||
+              (item.href !== '/manager/dashboard' &&
+                router.pathname.startsWith(item.href))
+
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 onClick={closeMobileMenu}
-                className={`
-                                    group relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-                                    transition-all duration-300 ease-out overflow-hidden
-                                    ${isActive
-                    ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/10 text-green-400 shadow-lg shadow-green-500/10'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-                  }
-                                `}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition ${
+                  isActive
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
+                }`}
               >
-                {/* Active indicator bar */}
-                <div className={`
-                                    absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-green-400 to-emerald-500 rounded-r-full
-                                    transition-all duration-300
-                                    ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}
-                                `} />
-
-                {/* Hover background effect */}
-                <div className={`
-                                    absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent rounded-xl
-                                    transition-opacity duration-300
-                                    ${isActive ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}
-                                `} />
-
-                {/* Icon with glow effect */}
-                <div className={`
-                                    relative z-10 transition-all duration-300
-                                    ${isActive ? 'scale-110' : 'group-hover:scale-110'}
-                                `}>
-                  <item.icon className={`
-                                        w-5 h-5 transition-all duration-300
-                                        ${isActive ? 'drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]' : ''}
-                                    `} />
-                </div>
-
-                {/* Text */}
-                <span className="relative z-10 transition-all duration-300">
-                  {item.name}
-                </span>
-
-                {/* Shimmer effect on hover */}
-                <div className={`
-                                    absolute inset-0 -translate-x-full group-hover:translate-x-full
-                                    bg-gradient-to-r from-transparent via-white/5 to-transparent
-                                    transition-transform duration-1000 ease-in-out
-                                    ${isActive ? 'hidden' : ''}
-                                `} />
+                <item.icon className="w-5 h-5" />
+                {item.name}
               </Link>
             )
           })}
         </nav>
       </div>
 
-      {/* Desktop Sidebar */}
-      <div className={`hidden lg:block h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 text-zinc-400 shadow-2xl border-r border-zinc-800/50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'
-        } sticky top-0`}>
-        <div className={`border-b border-zinc-800/50 backdrop-blur-sm transition-all duration-300 ${isCollapsed ? 'p-4' : 'p-6'
-          }`}>
-          <div className="flex items-center gap-3 group">
-            <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-lg shadow-green-500/20 group-hover:shadow-green-500/40 transition-all duration-300 group-hover:scale-110 flex-shrink-0">
-              {/* Use generic icon or brand */}
-              <LayoutDashboard className="w-5 h-5 text-white" />
+      {/* ===== Desktop Sidebar ===== */}
+      <div
+        className={`hidden lg:flex fixed inset-y-0 left-0 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 border-r border-zinc-800/50 transition-all ${
+          isCollapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        <div className="flex flex-col w-full">
+          <div className={`border-b border-zinc-800/50 ${isCollapsed ? 'p-4' : 'p-6'}`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
+                <LayoutDashboard className="w-5 h-5 text-white" />
+              </div>
+              {!isCollapsed && (
+                <h1 className="text-lg font-bold text-white">Volunteer Hub</h1>
+              )}
             </div>
-            <h1 className={`text-lg font-bold text-white tracking-tight transition-all duration-300 whitespace-nowrap ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
-              }`}>
-              Volunteer Hub
-            </h1>
+
+            <button
+              onClick={toggleCollapse}
+              className="mt-4 w-full flex justify-center text-zinc-400 hover:text-white"
+            >
+              {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+            </button>
           </div>
-          {/* Toggle Button */}
-          <button
-            onClick={toggleCollapse}
-            className="mt-4 w-full flex items-center justify-center p-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all duration-300 group"
-            aria-label={isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            ) : (
-              <ChevronLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            )}
-          </button>
+
+          <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'} space-y-1`}>
+            {navItems.map(item => {
+              const isActive =
+                router.pathname === item.href ||
+                (item.href !== '/manager/dashboard' &&
+                  router.pathname.startsWith(item.href))
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center rounded-xl transition ${
+                    isCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-4 py-3'
+                  } ${
+                    isActive
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
+                  }`}
+                  title={isCollapsed ? item.name : ''}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {!isCollapsed && item.name}
+                </Link>
+              )
+            })}
+          </nav>
         </div>
-        <nav className={`space-y-1 transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-4'
-          }`}>
-          {navItems.map((item) => {
-            // Basic active check: if path starts with href. 
-            // Exception: Dashboard is usually exact or root of manager.
-            const isActive = router.pathname === item.href || (item.href !== '/manager/dashboard' && router.pathname.startsWith(item.href));
-
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`
-                                    group relative flex items-center rounded-xl text-sm font-medium
-                                    transition-all duration-300 ease-out overflow-hidden
-                                    ${isCollapsed
-                    ? 'justify-center px-2 py-3'
-                    : 'gap-3 px-4 py-3'
-                  }
-                                    ${isActive
-                    ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/10 text-green-400 shadow-lg shadow-green-500/10'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-                  }
-                                `}
-                title={isCollapsed ? item.name : ''}
-              >
-                {/* Active indicator bar */}
-                <div className={`
-                                    absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-green-400 to-emerald-500 rounded-r-full
-                                    transition-all duration-300
-                                    ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}
-                                `} />
-
-                {/* Hover background effect */}
-                <div className={`
-                                    absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent rounded-xl
-                                    transition-opacity duration-300
-                                    ${isActive ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}
-                                `} />
-
-                {/* Icon with glow effect */}
-                <div className={`
-                                    relative z-10 transition-all duration-300
-                                    ${isActive ? 'scale-110' : 'group-hover:scale-110'}
-                                `}>
-                  <item.icon className={`
-                                        w-5 h-5 transition-all duration-300
-                                        ${isActive ? 'drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]' : ''}
-                                    `} />
-                </div>
-
-                {/* Text */}
-                <span className={`relative z-10 transition-all duration-300 whitespace-nowrap ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
-                  }`}>
-                  {item.name}
-                </span>
-
-                {/* Shimmer effect on hover */}
-                <div className={`
-                                    absolute inset-0 -translate-x-full group-hover:translate-x-full
-                                    bg-gradient-to-r from-transparent via-white/5 to-transparent
-                                    transition-transform duration-1000 ease-in-out
-                                    ${isActive ? 'hidden' : ''}
-                                `} />
-              </Link>
-            )
-          })}
-        </nav>
       </div>
     </>
   )

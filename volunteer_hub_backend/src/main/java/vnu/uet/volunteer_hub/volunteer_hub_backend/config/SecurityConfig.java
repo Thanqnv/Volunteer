@@ -1,7 +1,6 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.config;
 
-import java.util.List;
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,6 +9,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -31,11 +31,16 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-    private final CustomOAuth2UserService customOAuth2UserService;   // ⭐ THÊM DÒNG NÀY
+    private final CustomOAuth2UserService customOAuth2UserService;
     private final ClientRegistrationRepository clientRegistrationRepository;
 
+    // Frontend URL (comma-separated)
+    @Value("${app.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
+
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
@@ -43,60 +48,88 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers(
-                        "/ui/**",
-                        "/api/auth/**",
-                        "/api/dashboard/**",
-                        "/api/events",
-                        "/api/posts/visible",
-                        "/api/posts/{postId}",
-                        "/api/posts/**",
-                        "/api/comments/**",
-                        "/api/users/**",
-                        "/oauth2/**",
-                        "/login/oauth2/**",
-                        "/error"
-                ).permitAll()
+                // Disable CSRF for stateless REST API
+                .csrf(AbstractHttpConfigurer::disable)
 
-                .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
+                // Enable CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                .requestMatchers("/api/admin/**").permitAll()
+                // Stateless session (JWT)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                .anyRequest().authenticated()
-            )
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.setContentType("application/json");
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write(
-                        "{\"data\":null,\"message\":\"Unauthorized\",\"detail\":\"Authentication required.\"}");
-                })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    response.setContentType("application/json");
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    response.getWriter().write(
-                        "{\"data\":null,\"message\":\"Forbidden\",\"detail\":\"Access denied.\"}");
-                })
-            )
+                // Authorization rules
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers(
+                                "/ui/**",
+                                "/api/auth/**",
+                                "/api/dashboard/**",
+                                "/api/events/**",
+                                "/api/registrations/**",
+                                "/api/posts/visible",
+                                "/api/posts/{postId}",
+                                "/api/posts",
+                                "/api/posts/**",
+                                "/api/comments/**",
+                                "/api/users/**",
+                                "/api/search/autocomplete/**",
+                                "/api/users/profile/**",
+                                "/api/notifications/**",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
+                                "/error")
+                        .permitAll()
 
-            // ⭐ SỬA PHẦN NÀY ĐỂ DÙNG CUSTOM OAUTH2 USER SERVICE
+                        // Allow anonymous GET posts
+                        .requestMatchers(HttpMethod.GET, "/api/posts")
+                        .permitAll()
+
+                        // Allow check-in without auth (test / kiosk mode)
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/check-in/*")
+                        .permitAll()
+
+                        // Admin endpoints (TODO: restrict by role later)
+                        .requestMatchers("/api/admin/**")
+                        .permitAll()
+
+                        // All other requests require authentication
+                        .anyRequest()
+                        .authenticated())
+
+                // Exception handling
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write(
+                                    "{\"data\":null,\"message\":\"Unauthorized\",\"detail\":\"Authentication required. Please provide a valid JWT token.\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write(
+                                    "{\"data\":null,\"message\":\"Forbidden\",\"detail\":\"You don't have permission to access this resource.\"}");
+                        }))
+
+                // OAuth2 Login (Google)
                 .oauth2Login(oauth2 -> {
-                // Register custom AuthorizationRequestResolver to add prompt/select_account
-                OAuth2AuthorizationRequestResolver resolver =
-                    new vnu.uet.volunteer_hub.volunteer_hub_backend.config.CustomAuthorizationRequestResolver(
-                        clientRegistrationRepository, "/oauth2/authorization");
+                    OAuth2AuthorizationRequestResolver resolver =
+                            new CustomAuthorizationRequestResolver(
+                                    clientRegistrationRepository,
+                                    "/oauth2/authorization");
 
-                oauth2.authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(resolver))
-                      .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                      .successHandler(oAuth2AuthenticationSuccessHandler);
+                    oauth2
+                            .authorizationEndpoint(endpoint ->
+                                    endpoint.authorizationRequestResolver(resolver))
+                            .userInfoEndpoint(userInfo ->
+                                    userInfo.userService(customOAuth2UserService))
+                            .successHandler(oAuth2AuthenticationSuccessHandler);
                 });
 
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        // JWT filter
+        http.addFilterBefore(
+                jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -105,22 +138,28 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "http://localhost:8080"
-        ));
+        var origins = java.util.Arrays.stream(frontendUrl.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
 
-        configuration.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
-        ));
-
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedMethods(
+                java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(
+                java.util.List.of(
+                        "Authorization",
+                        "Content-Type",
+                        "Accept",
+                        "Origin",
+                        "X-Requested-With"));
+        configuration.setExposedHeaders(
+                java.util.List.of("Authorization"));
         configuration.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-
         return source;
     }
 }

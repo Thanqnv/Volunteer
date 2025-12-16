@@ -3,8 +3,6 @@ package vnu.uet.volunteer_hub.volunteer_hub_backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreateCommentRequest;
@@ -17,7 +15,7 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.CommentRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.PostRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.CommentService;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.service.UserService;
+// no security util imported here (TEST MODE uses userId param)
 
 import java.util.UUID;
 
@@ -28,13 +26,16 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final UserService userService;
 
+    /**
+     * TODO [TEST MODE]: Sau khi test xong, sửa lại thành:
+     * Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+     * UUID userId = userService.getViewerIdFromAuthentication(auth);
+     * Và bỏ userId khỏi CreateCommentRequest
+     */
     @Override
     @Transactional
-    public CommentResponse createComment(UUID postId, CreateCommentRequest request) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = userService.getViewerIdFromAuthentication(auth);
+    public CommentResponse createComment(UUID postId, CreateCommentRequest request, UUID userId) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -69,20 +70,32 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentResponse updateComment(UUID commentId, UpdateCommentRequest request) {
-        // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        // UUID userId = userService.getViewerIdFromAuthentication(auth);
+    public CommentResponse updateComment(UUID commentId, UpdateCommentRequest request, UUID userId) {
 
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
-        // if (!comment.getUser().getId().equals(userId)) {
-        // throw new RuntimeException("You are not authorized to update this comment");
-        // }
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new RuntimeException("You are not authorized to update this comment");
+        }
 
         comment.setContent(request.getContent());
         Comment updatedComment = commentRepository.save(comment);
         return mapToResponse(updatedComment);
+    }
+
+    @Override
+    @Transactional
+    public void deleteComment(UUID commentId, UUID userId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new RuntimeException("You are not authorized to delete this comment");
+        }
+
+        // Cascade will remove replies due to orphanRemoval = true
+        commentRepository.delete(comment);
     }
 
     private CommentResponse mapToResponse(Comment comment) {

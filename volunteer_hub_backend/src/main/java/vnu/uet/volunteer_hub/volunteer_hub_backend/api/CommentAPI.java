@@ -19,11 +19,14 @@ public class CommentAPI {
 
     private final CommentService commentService;
 
-    @PutMapping("/{commentId}")
+    @PutMapping("/{commentId}/{userId}")
     public ResponseEntity<?> updateComment(@PathVariable UUID commentId,
-            @Valid @RequestBody UpdateCommentRequest request) {
+            @Valid @RequestBody UpdateCommentRequest request, @PathVariable UUID userId) {
         try {
-            CommentResponse response = commentService.updateComment(commentId, request);
+            // [TEST MODE] userId được truyền từ path parameter
+            // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            // UUID userId = userService.getViewerIdFromAuthentication(auth);
+            CommentResponse response = commentService.updateComment(commentId, request, userId);
             return ResponseEntity.ok(ResponseDTO.builder()
                     .message("Comment updated successfully")
                     .data(response)
@@ -32,6 +35,30 @@ public class CommentAPI {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ResponseDTO.builder()
                             .message(e.getMessage())
+                            .build());
+        }
+    }
+
+    @DeleteMapping("/{commentId}/{userId}")
+    public ResponseEntity<?> deleteComment(@PathVariable UUID commentId, @PathVariable UUID userId) {
+        try {
+            // [TEST MODE] userId passed from path parameter
+            // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            // UUID userId = userService.getViewerIdFromAuthentication(auth);
+            commentService.deleteComment(commentId, userId);
+            return ResponseEntity.ok(ResponseDTO.<Void>builder()
+                    .message("Comment deleted successfully")
+                    .build());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ResponseDTO.builder()
+                            .message(e.getMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ResponseDTO.builder()
+                            .message("Failed to delete comment")
+                            .detail(e.getMessage())
                             .build());
         }
     }

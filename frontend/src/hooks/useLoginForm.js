@@ -2,10 +2,20 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useForm } from "@/hooks/useForm";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-export const useLogin = (onSuccess) => {
-  const { login } = useAuth(); // Lấy hàm login từ AuthContext
-  const { formData, handleInputChange, setFieldValue } = useForm({ email: "", password: "", role: "volunteer" });
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
+  const { login } = useAuth();
+
+  // Dùng useForm của Hoanghai nhưng giữ role UPPERCASE cho BE
+  const { formData, handleInputChange, setFieldValue } = useForm({
+    email: "",
+    password: "",
+    role: initialRole,
+  });
+
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -21,26 +31,57 @@ export const useLogin = (onSuccess) => {
 
       const data = await response.json();
 
-      if (response.ok) {
-        const { token } = data;
-        login(token);
-        toast({
-          title: "Đăng nhập thành công!",
-          description: "Chào mừng bạn trở lại.",
-        });
-        if (onSuccess) onSuccess(data, formData);
-      } else {
+      const serverMessage =
+        data?.message ||
+        (Array.isArray(data?.data)
+          ? data.data.join("; ")
+          : data?.data?.message) ||
+        null;
+
+      if (!response.ok) {
+        const message =
+          serverMessage ||
+          "Đăng nhập thất bại. Kiểm tra email / mật khẩu / vai trò.";
         toast({
           title: "Lỗi đăng nhập",
-          description: data.message || "Đã xảy ra lỗi, vui lòng thử lại.",
+          description: message,
           variant: "destructive",
         });
+        return;
       }
+
+      // BE-compatible token resolve
+      const token =
+        data?.data?.accessToken ||
+        data?.accessToken ||
+        data?.data?.token ||
+        data?.token;
+
+      if (!token) {
+        toast({
+          title: "Lỗi đăng nhập",
+          description: "Không nhận được token từ server.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const resolvedRole = data?.data?.role || data?.role || formData.role;
+
+      // Quan trọng: login(token, role)
+      login(token, resolvedRole);
+
+      toast({
+        title: serverMessage || "Đăng nhập thành công",
+        description: "Chào mừng bạn quay trở lại!",
+      });
+
+      onSuccess && onSuccess(resolvedRole, data);
     } catch (error) {
       console.error("Lỗi khi đăng nhập:", error);
       toast({
         title: "Lỗi hệ thống",
-        description: "Không thể kết nối đến server. Vui lòng thử lại sau.",
+        description: "Không thể kết nối đến server.",
         variant: "destructive",
       });
     } finally {
@@ -53,6 +94,6 @@ export const useLogin = (onSuccess) => {
     loading,
     handleInputChange,
     handleSubmit,
-    setFieldValue, // Expose setFieldValue
+    setFieldValue,
   };
 };

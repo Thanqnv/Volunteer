@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.RequiredArgsConstructor;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EventService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.PostRankingService;
@@ -30,6 +31,7 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.service.TopPostsCacheService;
 
 @RestController
 @RequestMapping("/api/admin")
+@RequiredArgsConstructor
 public class AdminAPI {
 
     private final EventService eventService;
@@ -40,57 +42,44 @@ public class AdminAPI {
     private final TopPostsCacheService topPostsCacheService;
     private final PostRankingService postRankingService;
 
-    public AdminAPI(EventService eventService, UserService userService, UserRepository userRepository,
-            EventRepository eventRepository, RegistrationRepository registrationRepository,
-            TopPostsCacheService topPostsCacheService,
-            PostRankingService postRankingService) {
-        this.eventService = eventService;
-        this.userService = userService;
-        this.userRepository = userRepository;
-        this.eventRepository = eventRepository;
-        this.registrationRepository = registrationRepository;
-        this.topPostsCacheService = topPostsCacheService;
-        this.postRankingService = postRankingService;
-    }
-
-    @PutMapping("/events/{id}/approve")
+    @PutMapping("/events/{eventId}/approve")
     // @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> approveEventStatus(@PathVariable UUID id) {
-        eventService.approveEventStatus(id);
+    public ResponseEntity<?> approveEventStatus(@PathVariable UUID eventId) {
+        eventService.approveEventStatus(eventId);
         return ResponseEntity.ok(ResponseDTO.<Void>builder()
                 .message("Event approved successfully")
                 .build());
     }
 
-    @PutMapping("/events/{id}/reject")
+    @PutMapping("/events/{eventId}/reject")
     // @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> rejectEventStatus(@PathVariable UUID id) {
-        eventService.rejectEventStatus(id);
+    public ResponseEntity<?> rejectEventStatus(@PathVariable UUID eventId) {
+        eventService.rejectEventStatus(eventId);
         return ResponseEntity.ok(ResponseDTO.<Void>builder()
                 .message("Event rejected successfully")
                 .build());
     }
 
-    @DeleteMapping("/events/{id}")
+    @DeleteMapping("/events/{eventId}")
     // @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteEvent(@PathVariable UUID id) {
-        eventService.deleteEvent(id);
+    public ResponseEntity<?> deleteEvent(@PathVariable UUID eventId) {
+        eventService.deleteEvent(eventId);
         return ResponseEntity.ok(ResponseDTO.<Void>builder()
                 .message("Event deleted successfully")
                 .build());
     }
 
-    @PutMapping("/users/{id}/lock")
+    @PutMapping("/users/{userId}/lock")
     // @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> lockUser(@PathVariable UUID id) {
-        userService.lockUserById(id);
+    public ResponseEntity<?> lockUser(@PathVariable UUID userId) {
+        userService.lockUserById(userId);
         return ResponseEntity.ok(ResponseDTO.<Void>builder().message("User locked").build());
     }
 
-    @PutMapping("/users/{id}/unlock")
+    @PutMapping("/users/{userId}/unlock")
     // @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> unlockUser(@PathVariable UUID id) {
-        userService.unlockUserById(id);
+    public ResponseEntity<?> unlockUser(@PathVariable UUID userId) {
+        userService.unlockUserById(userId);
         return ResponseEntity.ok(ResponseDTO.<Void>builder().message("User unlocked").build());
     }
 
@@ -239,7 +228,8 @@ public class AdminAPI {
      *         the
      *         `topPostsCacheService.getTopPostsCached(5)` method call is
      *         successful, it returns a response
-     *         with a message "Cached top posts" and the top posts data. If there is
+     *         with a message "Cached top posts" and the top post's data. If there
+     *         is
      *         an exception during the
      *         method call, it returns a response with a message "No cached top
      *         posts" and an empty list

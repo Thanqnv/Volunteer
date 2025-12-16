@@ -5,6 +5,7 @@ export const useEvents = (initialPage = 1, limit = 9) => {
     const [allEvents, setAllEvents] = useState([]);
     const [featuredEvents, setFeaturedEvents] = useState([]);
     const [filteredEvents, setFilteredEvents] = useState([]);
+    const [displayedEvents, setDisplayedEvents] = useState([]);
     const [filters, setFilters] = useState({
         startDate: "",
         endDate: "",
@@ -23,21 +24,28 @@ export const useEvents = (initialPage = 1, limit = 9) => {
         setError(null);
         try {
             const data = await eventService.getAllEvents(page, limit);
-            if (data.events && data.events.length > 0) {
-                setAllEvents(data.events);
-                setTotalPages(data.totalPages || Math.ceil((data.total || 0) / limit));
-            } else {
-                // Fallback to mocks
-                const mocks = eventService.getMockEvents();
-                setAllEvents(mocks);
-                setTotalPages(1);
+            const events = data?.events || [];
+
+            if (events.length > 0) {
+                setAllEvents(events);
+                setFeaturedEvents(events.slice(0, 5));
+                setTotalPages(data.totalPages || Math.max(1, Math.ceil((data.total || events.length) / limit)));
+                return;
             }
+
+            // Fallback to mocks
+            const mocks = eventService.getMockEvents();
+            setAllEvents(mocks);
+            setFeaturedEvents(mocks.slice(0, 5));
+            setTotalPages(1);
         } catch (err) {
             console.error("Fetch error:", err);
             setError(err.message);
             // Fallback to mocks
             const mocks = eventService.getMockEvents();
             setAllEvents(mocks);
+            setFeaturedEvents(mocks.slice(0, 5));
+            setTotalPages(1);
         } finally {
             setIsLoading(false);
         }
@@ -46,8 +54,6 @@ export const useEvents = (initialPage = 1, limit = 9) => {
     // Initial Fetch & Mock Setup
     useEffect(() => {
         fetchEvents(currentPage);
-        const mocks = eventService.getMockEvents();
-        setFeaturedEvents(mocks);
     }, [fetchEvents, currentPage]);
 
     // Filter Logic
@@ -77,6 +83,19 @@ export const useEvents = (initialPage = 1, limit = 9) => {
         });
         setFilteredEvents(filtered);
     }, [allEvents, filters]);
+
+    // Pagination: keep current page valid and slice filtered events
+    useEffect(() => {
+        const total = Math.max(1, Math.ceil(filteredEvents.length / limit));
+        if (currentPage > total) {
+            setCurrentPage(total);
+            return;
+        }
+
+        setTotalPages(total);
+        const startIndex = (currentPage - 1) * limit;
+        setDisplayedEvents(filteredEvents.slice(startIndex, startIndex + limit));
+    }, [filteredEvents, currentPage, limit]);
 
     // Actions
     const handlePageChange = (page) => {
@@ -128,6 +147,7 @@ export const useEvents = (initialPage = 1, limit = 9) => {
         allEvents,
         featuredEvents,
         filteredEvents,
+        displayedEvents,
         filters,
         setFilters,
         resetFilters,

@@ -1,16 +1,20 @@
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useForm } from "@/hooks/useForm";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-export const useSignup = (onSuccess) => {
-  const { formData, handleInputChange } = useForm({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'volunteer',
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+export const useSignup = (onSuccess, initialRole = "VOLUNTEER") => {
+  const { formData, handleInputChange, setFieldValue } = useForm({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: initialRole, // ⚠️ UPPERCASE cho BE
   });
+
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -25,41 +29,52 @@ export const useSignup = (onSuccess) => {
       return;
     }
 
+    if (formData.role === "ADMIN") {
+      toast({
+        title: "Lỗi đăng ký",
+        description: "Không thể tự đăng ký vai trò ADMIN.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
           email: formData.email,
           password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          name: fullName,
           role: formData.role,
         }),
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         toast({
           title: "Đăng ký thành công!",
           description: "Tài khoản đã được tạo thành công.",
         });
-        if (onSuccess) onSuccess();
+        onSuccess && onSuccess();
       } else {
         const errorData = await response.json();
         toast({
           title: "Lỗi đăng ký",
-          description: errorData.message || "Không thể tạo tài khoản.",
+          description: errorData?.message || "Không thể tạo tài khoản.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Lỗi khi đăng ký:', error);
+      console.error("Lỗi khi đăng ký:", error);
       toast({
         title: "Lỗi hệ thống",
-        description: "Đã xảy ra lỗi khi kết nối đến máy chủ.",
+        description: "Không thể kết nối đến máy chủ.",
         variant: "destructive",
       });
     } finally {
@@ -72,5 +87,6 @@ export const useSignup = (onSuccess) => {
     loading,
     handleInputChange,
     handleSubmit,
+    setFieldValue,
   };
 };
