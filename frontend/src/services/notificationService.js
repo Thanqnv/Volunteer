@@ -4,7 +4,7 @@
  * Includes fetching notifications and marking them as read.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export const notificationService = {
     async getNotifications(page = 1, limit = 10) {

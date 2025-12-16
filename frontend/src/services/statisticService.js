@@ -6,7 +6,7 @@
 
 import { MOCK_DASHBOARD_STATS } from '@/data/statisticData';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export const statisticService = {
     getStatistics: async () => {
