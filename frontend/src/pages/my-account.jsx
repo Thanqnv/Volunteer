@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useAccountInfo } from "@/hooks/useAccountInfo";
 import { useEffect, useState } from "react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export default function AccountPage() {
   const {

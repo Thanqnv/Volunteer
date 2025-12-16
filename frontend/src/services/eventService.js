@@ -5,8 +5,7 @@
 
 import { managerEvents } from "@/data/managerEvents";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 const normalizeEvent = (event = {}) => ({
   event_id: event.event_id || event.eventId || event.id,

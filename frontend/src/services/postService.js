@@ -10,9 +10,16 @@ import { MOCK_POSTS } from '@/data/postData';
 // Simulate API delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+const getBaseURL = () => {
+    if (typeof window !== 'undefined') {
+        return '/api';
+    }
+    return 'http://nginx/api';
+};
+
 // Axios instance (configured for real API usage later)
 const api = axios.create({
-    baseURL: 'https://api.example.com', // Replace with real API
+    baseURL: getBaseURL(), // Replace with real API
     headers: {
         'Content-Type': 'application/json',
     },
