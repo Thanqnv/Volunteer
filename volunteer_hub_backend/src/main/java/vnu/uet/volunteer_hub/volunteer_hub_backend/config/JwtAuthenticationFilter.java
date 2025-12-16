@@ -1,0 +1,126 @@
+package vnu.uet.volunteer_hub.volunteer_hub_backend.config;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.utils.JwtUtil;
+
+/**
+ * JWT Authentication Filter.
+ * Intercept mỗi request để validate JWT token và set authentication.
+ * Extends OncePerRequestFilter để đảm bảo filter chỉ chạy một lần per request.
+ */
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
+    private final JwtUtil jwtUtil;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
+
+        try {
+            String jwt = parseJwt(request);
+
+            if (jwt != null && jwtUtil.validateToken(jwt)) {
+                String userId = jwtUtil.getUserIdFromToken(jwt);
+                String email = jwtUtil.getEmailFromToken(jwt);
+                String role = jwtUtil.getRoleFromToken(jwt);
+
+                logger.debug("JWT validated for user: {}, role: {}", email, role);
+
+                // Tạo authorities từ role
+                List<SimpleGrantedAuthority> authorities = Collections.singletonList(
+                        new SimpleGrantedAuthority("ROLE_" + role));
+
+                // Tạo authentication token với userId là principal
+                // Principal có thể là userId (UUID string) để dễ dàng truy cập trong controller
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        UUID.fromString(userId), // principal là UUID
+                        null, // credentials không cần thiết sau khi authenticated
+                        authorities);
+
+                // Set thêm details (có thể hữu ích cho logging/auditing)
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                // Set authentication vào SecurityContext
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (Exception e) {
+            logger.error("Cannot set user authentication: {}", e.getMessage());
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Parse JWT token từ Authorization header hoặc cookies.
+     * Header format: "Bearer <token>"
+     * Cookie name: "jwt_token"
+     * 
+     * @param request HTTP request
+     * @return JWT token string hoặc null nếu không có/không hợp lệ
+     */
+    private String parseJwt(HttpServletRequest request) {
+        // First, try to get JWT from Authorization header
+        String headerAuth = request.getHeader(AUTHORIZATION_HEADER);
+        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith(BEARER_PREFIX)) {
+            return headerAuth.substring(BEARER_PREFIX.length());
+        }
+
+        // If not found in header, try to get from cookies
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("jwt_token".equals(cookie.getName())) {
+                    String token = cookie.getValue();
+                    if (StringUtils.hasText(token)) {
+                        return token;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Không filter các public endpoints (optional optimization).
+     */
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getServletPath();
+        // Có thể skip filter cho các public endpoints để tăng performance
+        // Nhưng vẫn cần để SecurityConfig handle authorization
+        return path.startsWith("/api/auth/login") ||
+                path.startsWith("/api/auth/register") ||
+                path.startsWith("/api/auth/forgot-password") ||
+                path.startsWith("/api/auth/reset-password");
+    }
+}
