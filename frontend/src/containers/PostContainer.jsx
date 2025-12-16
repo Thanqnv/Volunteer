@@ -79,7 +79,7 @@ const PostContainer = () => {
 
             {!hasMore && posts.length > 0 && (
                 <div className="text-center text-gray-500 py-8">
-                    You've reached the end of the feed.
+                    You&apos;ve reached the end of the feed.
                 </div>
             )}
 

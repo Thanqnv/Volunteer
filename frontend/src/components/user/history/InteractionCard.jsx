@@ -34,7 +34,7 @@ export const InteractionCard = ({ item }) => {
                             {item.type === 'like' ? <span className="font-semibold">{item.author}</span> : item.content}
                         </p>
                         {item.type === 'like' && (
-                            <p className="text-xs text-zinc-500 mt-1 italic">"{item.content}"</p>
+                            <p className="text-xs text-zinc-500 mt-1 italic">&quot;{item.content}&quot;</p>
                         )}
                     </div>
                     <span className="text-xs text-zinc-400 whitespace-nowrap ml-2">

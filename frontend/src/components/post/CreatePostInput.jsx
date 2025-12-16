@@ -155,7 +155,7 @@ const CreatePostInput = ({ onPostCreated }) => {
                         onClick={handlePostBar}
                     >
                         <div>
-                            What's on your mind, {user.name}?
+                            What&apos;s on your mind, {user.name}?
                         </div>
                     </button>
                 </div>

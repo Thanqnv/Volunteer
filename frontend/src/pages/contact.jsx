@@ -147,7 +147,7 @@ const Form = () => {
               Send us a message
             </h3>
             <p className="mt-1.5 text-sm text-gray-600">
-              We'll get back to you within 24 hours.
+              We&apos;ll get back to you within 24 hours.
             </p>
           </div>
           <motion.div
@@ -264,13 +264,13 @@ const TrangLienHe = () => {
                 <span className="text-emerald-600 font-bold uppercase tracking-wider text-sm">Contact Us</span>
               </div>
               <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl lg:text-6xl mb-6">
-                Let's start a <br />
+                Let&apos;s start a <br />
                 <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
                   Conversation
                 </span>
               </h1>
               <p className="text-lg text-gray-600 max-w-lg leading-relaxed">
-                Have questions about volunteering or organizing an event? We're here to help you make a difference.
+                Have questions about volunteering or organizing an event? We&apos;re here to help you make a difference.
               </p>
             </motion.div>
 

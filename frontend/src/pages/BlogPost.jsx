@@ -17,7 +17,7 @@ const BlogPost = () => {
                         <p className="font-semibold mb-2">Tính năng đã implement:</p>
                         <ul className="list-disc pl-5 space-y-1">
                             <li>Hiển thị danh sách comment và reply (nested)</li>
-                            <li>Lazy load replies khi bấm "Xem câu trả lời"</li>
+                            <li>Lazy load replies khi bấm &quot;Xem câu trả lời&quot;</li>
                             <li>Markdown ảnh: <code>![alt](url)</code></li>
                             <li>Mention: <code>&lt;user-mention&gt;</code></li>
                             <li>Thêm comment và reply mới (Optimistic UI)</li>
