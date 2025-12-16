@@ -3,6 +3,7 @@
  * @description Service for handling event-related operations.
  */
 
+import axios from 'axios';
 import { managerEvents } from "@/data/managerEvents";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
@@ -36,7 +37,8 @@ const normalizeEvent = (event = {}) => ({
 export const eventService = {
   getAllEvents: async (page = 1, limit = 9) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/events`);
+      // const response = await fetch(`${API_BASE_URL}/api/events`);
+      const response = await axios.get(`${API_BASE_URL}/api/events`);
       if (!response.ok) throw new Error("Lỗi khi tải danh sách sự kiện");
 
       const payload = await response.json();
@@ -61,7 +63,9 @@ export const eventService = {
 
   getPendingEvents: async (page = 1, limit = 9) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/events?status=PENDING`);
+      // const response = await fetch(`${API_BASE_URL}/api/events?status=PENDING`);
+      const response = await axios.get(`${API_BASE_URL}/api/events?status=PENDING`);
+
       if (!response.ok)
         throw new Error("Lỗi khi tải danh sách sự kiện đang chờ duyệt");
 
@@ -86,24 +90,36 @@ export const eventService = {
   },
 
   registerEvent: async (eventId) => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/events/${eventId}/register`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      }
+    // const response = await fetch(
+    //   `${API_BASE_URL}/api/events/${eventId}/register`,
+    //   {
+    //     method: "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //   }
+    // );
+    const response = await axios.post(
+        `${API_BASE_URL}/api/events/${eventId}/register`,
+        {
+          headers: { "Content-Type": "application/json" },
+        },
     );
     if (!response.ok) throw new Error("Lỗi khi đăng ký sự kiện");
     return response.json();
   },
 
   cancelRegistration: async (eventId) => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/events/${eventId}/cancel`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      }
+    // const response = await fetch(
+    //   `${API_BASE_URL}/api/events/${eventId}/cancel`,
+    //   {
+    //     method: "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //   }
+    // );
+    const response = await axios.post(
+        `${API_BASE_URL}/api/events/${eventId}/cancel`,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
     );
     if (!response.ok) throw new Error("Lỗi khi hủy đăng ký");
     return response.json();
@@ -111,7 +127,8 @@ export const eventService = {
 
   getEventDetails: async (eventId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
+      // const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
+      const response = await axios.get(`${API_BASE_URL}/api/events/${eventId}`);
       if (!response.ok) throw new Error("Failed to fetch event details");
       const payload = await response.json();
       return normalizeEvent(payload?.data || payload);

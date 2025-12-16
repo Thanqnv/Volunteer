@@ -23,15 +23,27 @@ export function EditCustomerDialog({ customer, onClose, onSave }) {
     const updateCustomerApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/customer/{id=${editedCustomer.id}}`
 
     try {
-        const response = await fetch(updateCustomerApi, {
-            method: "PUT",
-            headers: {
+        // const response = await fetch(updateCustomerApi, {
+        //     method: "PUT",
+        //     headers: {
+        //         "Content-Type": "application/json",
+        //         "admin": "true",
+        //         "authorization": "Bearer " + localStorage.getItem("token")
+        //     },
+        //     body: JSON.stringify(editedCustomer)
+        // })
+        const response = await axios.put(updateCustomerApi,
+            {
+              editedCustomer
+            },
+            {
+              headers: {
                 "Content-Type": "application/json",
                 "admin": "true",
                 "authorization": "Bearer " + localStorage.getItem("token")
+              },
             },
-            body: JSON.stringify(editedCustomer)
-        })
+        )
         if (!response.ok) {
             throw new Error("Send request failed")
         }

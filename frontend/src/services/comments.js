@@ -20,9 +20,9 @@ export const createComment = async ({ postId, message, parentId }) => {
                 Authorization: `Bearer ${token}`,
             },
         });
-        return response.data;
+        return response;
     } catch (error) {
-        throw error.response?.data?.message || "Error creating comment";
+        throw error.response?.message || "Error creating comment";
     }
 };
 
@@ -36,9 +36,9 @@ export const updateComment = async ({ postId, message, id }) => {
                 Authorization: `Bearer ${token}`,
             },
         });
-        return response.data;
+        return response;
     } catch (error) {
-        throw error.response?.data?.message || "Error updating comment";
+        throw error.response?.message || "Error updating comment";
     }
 };
 
@@ -50,9 +50,9 @@ export const deleteComment = async ({ postId, id }) => {
                 Authorization: `Bearer ${token}`,
             },
         });
-        return response.data;
+        return response;
     } catch (error) {
-        throw error.response?.data?.message || "Error deleting comment";
+        throw error.response?.message || "Error deleting comment";
     }
 };
 
@@ -64,8 +64,8 @@ export const toggleCommentLike = async ({ id, postId }) => {
                 Authorization: `Bearer ${token}`,
             },
         });
-        return response.data;
+        return response;
     } catch (error) {
-        throw error.response?.data?.message || "Error toggling like";
+        throw error.response?.message || "Error toggling like";
     }
 };

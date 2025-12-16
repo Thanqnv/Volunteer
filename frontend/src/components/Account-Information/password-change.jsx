@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
+import axios from 'axios';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export default function PasswordChange({ personalInfo }) {
@@ -42,19 +43,33 @@ export default function PasswordChange({ personalInfo }) {
             return;
         }
 
-        const response = await fetch(
+        // const response = await fetch(
+        //     `${API_BASE_URL}/api/auth/id=${personalInfo.uid}/password`,
+        //     {
+        //         method: "PUT",
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //             Authorization: `Bearer ${token}`,
+        //         },
+        //         body: JSON.stringify({
+        //             email: personalInfo.email,
+        //             oldPassword: currentPassword,
+        //             newPassword: newPassword,
+        //         }),
+        //     }
+        // );
+        const response = await axios.put(
             `${API_BASE_URL}/api/auth/id=${personalInfo.uid}/password`,
             {
-                method: "PUT",
+                email: personalInfo.email,
+                oldPassword: currentPassword,
+                newPassword: newPassword,
+            },
+            {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    email: personalInfo.email,
-                    oldPassword: currentPassword,
-                    newPassword: newPassword,
-                }),
             }
         );
 
