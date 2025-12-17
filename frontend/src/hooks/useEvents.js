@@ -31,7 +31,7 @@ export const useEvents = (initialPage = 1, limit = 9) => {
             if (events.length > 0) {
                 setAllEvents(events);
                 setFeaturedEvents(events.slice(0, 5));
-                setTotalPages(data.totalPages || Math.max(1, Math.ceil((data.total || events.length) / limit)));
+                setTotalPages(Math.max(1, Math.ceil((events.length) / limit)));
                 return;
             }
         } catch (err) {
@@ -72,6 +72,7 @@ export const useEvents = (initialPage = 1, limit = 9) => {
 
             return dateMatch && categoryMatch && locationMatch && searchMatch;
         });
+        console.log("Filtered events:", filtered);
         setFilteredEvents(filtered);
     }, [allEvents, filters]);
 
@@ -85,7 +86,9 @@ export const useEvents = (initialPage = 1, limit = 9) => {
 
         setTotalPages(total);
         const startIndex = (currentPage - 1) * limit;
-        setDisplayedEvents(filteredEvents.slice(startIndex, startIndex + limit));
+        const displayedEvents = filteredEvents.slice(startIndex, startIndex + limit);
+        console.log("Displayed events:", displayedEvents);
+        setDisplayedEvents(displayedEvents);
     }, [filteredEvents, currentPage, limit]);
 
     // Actions
