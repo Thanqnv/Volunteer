@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { useRouter } from 'next/router'
 import { toast } from '@/hooks/use-toast'
+import axios from 'axios';
 
 export default function AdminProfilePage() {
   const router = useRouter()
@@ -37,13 +38,22 @@ export default function AdminProfilePage() {
     const getAdminApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin`
 
     try {
-      const response = await fetch(getAdminApi, {
-        method: "GET",
-        headers: {
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-      })
+      // const response = await fetch(getAdminApi, {
+      //   method: "GET",
+      //   headers: {
+      //     "admin": "true",
+      //     "authorization": "Bearer " + localStorage.getItem("token")
+      //   },
+      // })
+      const response = await axios.get(
+          getAdminApi,
+          {
+            headers: {
+              "admin": "true",
+              "authorization": "Bearer " + localStorage.getItem("token")
+            },
+          },
+      );
       if (!response.ok) {
         throw new Error("Send request failed")
       }
@@ -64,15 +74,28 @@ export default function AdminProfilePage() {
     const updateAdminApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin`
 
     try {
-      const response = await fetch(updateAdminApi, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-        body: JSON.stringify(editForm)
-      })
+      // const response = await fetch(updateAdminApi, {
+      //   method: "PUT",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     "admin": "true",
+      //     "authorization": "Bearer " + localStorage.getItem("token")
+      //   },
+      //   body: JSON.stringify(editForm)
+      // })
+      const response = await axios.put(
+          updateAdminApi,
+          {
+            editForm,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "admin": "true",
+              "authorization": "Bearer " + localStorage.getItem("token")
+            },
+          },
+      );
       if (!response.ok) {
         throw new Error("Send request failed")
       }
@@ -94,13 +117,22 @@ export default function AdminProfilePage() {
     const deleteAdminApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin`
 
     try {
-      const response = await fetch(deleteAdminApi, {
-        method: "DELETE",
-        headers: {
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-      })
+      // const response = await fetch(deleteAdminApi, {
+      //   method: "DELETE",
+      //   headers: {
+      //     "admin": "true",
+      //     "authorization": "Bearer " + localStorage.getItem("token")
+      //   },
+      // })
+      const response = await axios.delete(
+          deleteAdminApi,
+          {
+            headers: {
+              "admin": "true",
+              "authorization": "Bearer " + localStorage.getItem("token")
+            },
+          },
+      );
       if (!response.ok) {
         throw new Error("Send request failed")
       }
@@ -130,19 +162,38 @@ export default function AdminProfilePage() {
     }
 
     try {
-      const response = await fetch(changePasswordApi +
-        new URLSearchParams({
-          id: admin.uid,
-          admin: "true",
-        }).toString(), {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-        body: JSON.stringify({ "email": admin.email, "oldPassword": oldPassword, "newPassword": newPassword })
-      })
+      // const response = await fetch(changePasswordApi +
+      //   new URLSearchParams({
+      //     id: admin.uid,
+      //     admin: "true",
+      //   }).toString(), {
+      //   method: "PUT",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     "admin": "true",
+      //     "authorization": "Bearer " + localStorage.getItem("token")
+      //   },
+      //   body: JSON.stringify({ "email": admin.email, "oldPassword": oldPassword, "newPassword": newPassword })
+      // })
+      const response = await axios.put(
+          changePasswordApi,
+          {
+            "email": admin.email,
+            "oldPassword": oldPassword,
+            "newPassword": newPassword,
+          },
+          {
+            params: {
+              id: admin.uid,
+              admin: true,
+            },
+            headers: {
+              "Content-Type": "application/json",
+              "admin": "true",
+              "authorization": "Bearer " + localStorage.getItem("token")
+            },
+          },
+      );
       if (!response.ok) {
         throw new Error("Send request failed")
       }

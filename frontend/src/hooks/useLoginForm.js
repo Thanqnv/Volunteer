@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useForm } from "@/hooks/useForm";
+import axios from 'axios';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
@@ -23,11 +24,20 @@ export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      // const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify(formData),
+      // });
+      const response = await axios.post(
+          `${API_BASE_URL}/api/auth/login`,
+          {
+            formData,
+          },
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+      );
 
       const data = await response.json();
 

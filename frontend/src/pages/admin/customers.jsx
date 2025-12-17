@@ -22,6 +22,8 @@ import {
 import { useRouter } from "next/router"
 import { toast } from "@/hooks/use-toast"
 import { EditCustomerDialog } from "@/components/admin/EditCustomerDialog"
+import axios from 'axios';
+
 
 export default function CustomerManagement() {
   const router = useRouter()
@@ -50,13 +52,21 @@ export default function CustomerManagement() {
     const getAllCustomersApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/customer/all`
 
     try {
-      const response = await fetch(getAllCustomersApi, {
-        method: "GET",
-        headers: {
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-      })
+      // const response = await fetch(getAllCustomersApi, {
+      //   method: "GET",
+      //   headers: {
+      //     "admin": "true",
+      //     "authorization": "Bearer " + localStorage.getItem("token")
+      //   },
+      // })
+      const response = await axios.get(getAllCustomersApi,
+          {
+            headers: {
+              "admin": "true",
+              "authorization": "Bearer " + localStorage.getItem("token")
+            },
+          },
+      );
       if (!response.ok) {
         throw new Error("Send request failed")
       }
@@ -103,14 +113,23 @@ export default function CustomerManagement() {
     const deleteCustomerApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/customer/delete?id=${customer.uid}`
 
     try {
-      const response = await fetch(deleteCustomerApi,
-        {
-          method: "DELETE",
-          headers: {
-            "admin": "true",
-            "authorization": "Bearer " + localStorage.getItem("token")
+      // const response = await fetch(deleteCustomerApi,
+      //   {
+      //     method: "DELETE",
+      //     headers: {
+      //       "admin": "true",
+      //       "authorization": "Bearer " + localStorage.getItem("token")
+      //     },
+      //   })
+      const response = await axios.delete(
+          deleteCustomerApi,
+          {
+            headers: {
+              "admin": "true",
+              "authorization": "Bearer " + localStorage.getItem("token")
+            },
           },
-        })
+      );
       if (!response.ok) {
         throw new Error("Send request failed")
       }

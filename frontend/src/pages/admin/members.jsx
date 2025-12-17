@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, } from
 import { Input } from "@/components/ui/input"
 import { Plus } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import axios from 'axios';
 
 export default function AdminManagementPage() {
   const router = useRouter()
@@ -37,15 +38,28 @@ export default function AdminManagementPage() {
     const registerAdminApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin`
 
     try {
-      const response = await fetch(registerAdminApi, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-        body: JSON.stringify(formData)
-      })
+      // const response = await fetch(registerAdminApi, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     "admin": "true",
+      //     "authorization": "Bearer " + localStorage.getItem("token")
+      //   },
+      //   body: JSON.stringify(formData)
+      // })
+      const response = await axios.post(
+          registerAdminApi,
+          {
+            formData,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "admin": "true",
+              "authorization": "Bearer " + localStorage.getItem("token")
+            },
+          },
+      );
       if (!response.ok) {
         throw new Error("Send request failed")
       }
@@ -64,13 +78,22 @@ export default function AdminManagementPage() {
     const getAllAdminsApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/all`
 
     try {
-      const response = await fetch(getAllAdminsApi, {
-        method: "GET",
-        headers: {
-          "admin": "true",
-          "authorization": "Bearer " + localStorage.getItem("token")
-        },
-      })
+      // const response = await fetch(getAllAdminsApi, {
+      //   method: "GET",
+      //   headers: {
+      //     "admin": "true",
+      //     "authorization": "Bearer " + localStorage.getItem("token")
+      //   },
+      // })
+      const response = await axios.get(
+          getAllAdminsApi,
+          {
+            headers: {
+              "admin": "true",
+              "authorization": "Bearer " + localStorage.getItem("token")
+            },
+          },
+      );
       if (!response.ok) {
         throw new Error("Send request failed")
       }

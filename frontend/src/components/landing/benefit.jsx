@@ -12,6 +12,7 @@ import { HomeNewsCard } from "./NewsCards";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import axios from "axios";
 // Import `Carousel` với dynamic import để tắt SSR
 
 
@@ -46,9 +47,10 @@ export default function Benefit() {
     const getAllNewsApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}GET /api/news?page=1&limit=10`
 
     try {
-      const response = await fetch(getAllNewsApi, {
-        method: "GET",
-      })
+      // const response = await fetch(getAllNewsApi, {
+      //   method: "GET",
+      // })
+      const response = await axios.get(getAllNewsApi);
       if (!response.ok) {
         throw new Error("Send request failed")
       }

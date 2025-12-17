@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import axios from 'axios';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
@@ -32,15 +33,26 @@ export const useResetPassword = (onSuccess) => {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: form.token,
-          password: form.password,
-          confirmPassword: form.confirmPassword,
-        }),
-      });
+      // const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     token: form.token,
+      //     password: form.password,
+      //     confirmPassword: form.confirmPassword,
+      //   }),
+      // });
+      const res = await axios.post(
+          `${API_BASE_URL}/api/auth/reset-password`,
+          {
+            token: form.token,
+            password: form.password,
+            confirmPassword: form.confirmPassword,
+          },
+          {
+            headers: { "Content-Type": "application/json" },
+          },
+      );
 
       const data = await res.json().catch(() => ({}));
       const serverMessage = data?.message || data?.data || null;
