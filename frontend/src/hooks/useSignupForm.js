@@ -1,10 +1,7 @@
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useForm } from "@/hooks/useForm";
-import axios from 'axios';
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+import { authService } from "@/services/authService";
 
 export const useSignup = (onSuccess, initialRole = "VOLUNTEER") => {
   const { formData, handleInputChange, setFieldValue } = useForm({
@@ -43,44 +40,24 @@ export const useSignup = (onSuccess, initialRole = "VOLUNTEER") => {
 
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-
-      // const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     email: formData.email,
-      //     password: formData.password,
-      //     confirmPassword: formData.confirmPassword,
-      //     name: fullName,
-      //     role: formData.role,
-      //   }),
-      // });
-      const response = await axios.post(
-          `${API_BASE_URL}/api/auth/register`,
-          {
-            email: formData.email,
-            password: formData.password,
-            confirmPassword: formData.confirmPassword,
-            name: fullName,
-            role: formData.role,
-          },
-          {
-            headers: { "Content-Type": "application/json" },
-          },
-      );
-
-      if (response.ok) {
-        await response.json();
+      const response = await authService.register({
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        name: fullName,
+        role: formData.role,
+      });
+    
+      if (response.status === 200) {
         toast({
           title: "Đăng ký thành công!",
           description: "Tài khoản đã được tạo thành công.",
         });
         onSuccess && onSuccess();
-      } else {
-        const errorData = await response.json();
+      } else if (response.status === 400) {
         toast({
           title: "Lỗi đăng ký",
-          description: errorData?.message || "Không thể tạo tài khoản.",
+          description: "Không thể tạo tài khoản. Vui lòng kiểm tra trong phút lát.",
           variant: "destructive",
         });
       }

@@ -2,10 +2,8 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useForm } from "@/hooks/useForm";
-import axios from 'axios';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+import { authService } from "@/services/authService";
 
 export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
   const { login } = useAuth();
@@ -29,26 +27,16 @@ export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
       //   headers: { "Content-Type": "application/json" },
       //   body: JSON.stringify(formData),
       // });
-      const response = await axios.post(
-          `${API_BASE_URL}/api/auth/login`,
-          {
-            formData,
-          },
-          {
-            headers: { "Content-Type": "application/json" },
-          }
-      );
-
-      const data = await response.json();
+      const response = await authService.login(formData);
 
       const serverMessage =
-        data?.message ||
-        (Array.isArray(data?.data)
-          ? data.data.join("; ")
-          : data?.data?.message) ||
+        response.data?.message ||
+        (Array.isArray(response.data?.data)
+          ? response.data.data.join("; ")
+          : response.data?.data?.message) ||
         null;
 
-      if (!response.ok) {
+      if (!response.status === 200) {
         const message =
           serverMessage ||
           "Đăng nhập thất bại. Kiểm tra email / mật khẩu / vai trò.";
@@ -62,10 +50,10 @@ export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
 
       // BE-compatible token resolve
       const token =
-        data?.data?.accessToken ||
-        data?.accessToken ||
-        data?.data?.token ||
-        data?.token;
+        response?.data?.accessToken ||
+        response?.accessToken ||
+        response?.data?.token ||
+        response?.token;
 
       if (!token) {
         toast({
@@ -76,7 +64,7 @@ export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
         return;
       }
 
-      const resolvedRole = data?.data?.role || data?.role || formData.role;
+      const resolvedRole = response?.data?.role || response?.role || formData.role;
 
       // Quan trọng: login(token, role)
       login(token, resolvedRole);
@@ -86,7 +74,7 @@ export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
         description: "Chào mừng bạn quay trở lại!",
       });
 
-      onSuccess && onSuccess(resolvedRole, data);
+      onSuccess && onSuccess(resolvedRole, response);
     } catch (error) {
       console.error("Lỗi khi đăng nhập:", error);
       toast({
