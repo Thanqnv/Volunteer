@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { mockUsers } from '@/data/mockUsers';
+import React, { useState, useEffect } from 'react';
+import { adminService } from '@/services/adminService';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -225,7 +225,7 @@ const UserTableDesktop = ({ users, onLock, onUnlock, onView }) => (
 
 const UserManagement = () => {
     const { toast } = useToast();
-    const [users, setUsers] = useState(mockUsers);
+    const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('ALL');
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -238,17 +238,88 @@ const UserManagement = () => {
 
     // Filter
     const filteredUsers = users.filter(user => {
-        const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
-        const matchesStatus = statusFilter === 'ALL' || user.status === statusFilter;
+        const fullName = user.fullName || '';
+        const email = user.email || '';
+
+        const matchesSearch =
+            fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            email.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesRole =
+            roleFilter === 'ALL' || user.role === roleFilter;
+
+        const matchesStatus =
+            statusFilter === 'ALL' || user.status === statusFilter;
+
         return matchesSearch && matchesRole && matchesStatus;
     });
 
+    // Load Users
+    useEffect(() => {
+    loadUsers();
+    }, []);
+
+    const normalizeUser = (u = {}) => ({
+    id: u.id,
+    fullName: `${u.lastName || ''} ${u.firstName || ''}`.trim(),
+    email: u.email || '',
+    role: u.role || 'VOLUNTEER',
+    status: u.isActive ? 'ACTIVE' : 'LOCKED',
+    joinedAt: u.createdAt
+        ? new Date(u.createdAt).toISOString().split('T')[0]
+        : '-',
+    totalEvents: u.stats?.events ?? 0,
+    totalPosts: u.stats?.posts ?? 0,
+    totalComments: u.stats?.comments ?? 0,
+    lockHistory: u.lockHistory || [],
+    });
+
+    const loadUsers = async () => {
+    try {
+        const res = await adminService.getAllUsers(1, 100);
+        setUsers(res.data.map(normalizeUser));
+    } catch (error) {
+        toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể tải danh sách người dùng',
+        variant: 'destructive',
+        });
+    }
+    };
+
     // Actions
     const handleLockTrigger = (user) => {
-        setSelectedUser(user);
-        setIsLockOpen(true);
+    setSelectedUser(user);
+    setIsLockOpen(true);
+    };
+
+    const handleLock = async () => {
+    if (!selectedUser) return;
+
+    try {
+        await adminService.updateUserStatus(
+        selectedUser.id,
+        false,
+        lockReason
+        );
+        await loadUsers();
+
+        toast({
+        title: 'Đã khóa',
+        description: 'Đã khóa tài khoản người dùng thành công',
+        variant: 'destructive',
+        });
+    } catch (error) {
+        toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể khóa tài khoản',
+        variant: 'destructive',
+        });
+    } finally {
+        setIsLockOpen(false);
+        setLockReason('');
+        setSelectedUser(null);
+    }
     };
 
     const handleUnlockTrigger = (user) => {
@@ -256,35 +327,31 @@ const UserManagement = () => {
         setIsUnlockOpen(true);
     };
 
-    const handleLock = () => {
+    const handleUnlock = async () => {
         if (!selectedUser) return;
-        setUsers(users.map(u =>
-            u.id === selectedUser.id
-                ? { ...u, status: 'LOCKED', lockHistory: [...(u.lockHistory || []), { date: new Date().toISOString(), reason: lockReason }] }
-                : u
-        ));
-        toast({
-            title: "Đã khóa",
-            description: "Đã khóa tài khoản người dùng thành công",
-            variant: "destructive"
-        });
-        setIsLockOpen(false);
-        setLockReason('');
-        setSelectedUser(null);
-    };
 
-    const handleUnlock = () => {
-        if (!selectedUser) return;
-        setUsers(users.map(u =>
-            u.id === selectedUser.id ? { ...u, status: 'ACTIVE' } : u
-        ));
-        toast({
-            title: "Đã mở khóa",
-            description: "Đã mở khóa tài khoản thành công",
-            className: "bg-green-500 text-white"
-        });
-        setIsUnlockOpen(false);
-        setSelectedUser(null);
+        try {
+            await adminService.updateUserStatus(
+            selectedUser.id,
+            true
+            );
+            await loadUsers();
+
+            toast({
+            title: 'Đã mở khóa',
+            description: 'Đã mở khóa tài khoản thành công',
+            className: 'bg-green-500 text-white',
+            });
+        } catch (error) {
+            toast({
+            title: 'Lỗi',
+            description: error.message || 'Không thể mở khóa',
+            variant: 'destructive',
+            });
+        } finally {
+            setIsUnlockOpen(false);
+            setSelectedUser(null);
+        }
     };
 
     const openDetail = (user) => {

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { mockEvents } from '@/data/mockEvents';
+import React, { useState, useEffect } from 'react';
+import { eventService } from '@/services/eventService';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -248,9 +248,27 @@ const EventTableDesktop = ({ events, onApprove, onReject, onDelete, onView }) =>
 
 const EventManagement = () => {
   const { toast } = useToast();
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    try {
+      const events = await eventService.getAllEventsAdmin();
+      setEvents(events);
+    } catch (error) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể tải danh sách sự kiện',
+        variant: 'destructive',
+      });
+    }
+  };
+
 
   // Modal states
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -287,52 +305,50 @@ const EventManagement = () => {
   };
 
   // Actions Code (Same as before)
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (!selectedEvent) return;
-    setTimeout(() => {
-      setEvents(events.map(ev =>
-        ev.id === selectedEvent.id ? { ...ev, status: 'APPROVED' } : ev
-      ));
-      toast({
-        title: "Thành công",
-        description: "Duyệt sự kiện thành công",
-        className: "bg-green-500 text-white border-none"
-      });
+
+    try {
+      await eventService.approveEvent(selectedEvent.id);
+      await loadEvents();
+      toast({ title: 'Duyệt thành công' });
+    } catch (error) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    } finally {
       setIsConfirmApproveOpen(false);
       setSelectedEvent(null);
-    }, 500);
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!selectedEvent) return;
-    setTimeout(() => {
-      setEvents(events.map(ev =>
-        ev.id === selectedEvent.id ? { ...ev, status: 'REJECTED', notes: rejectReason } : ev
-      ));
-      toast({
-        title: "Đã từ chối",
-        description: "Đã từ chối sự kiện và lưu ghi chú",
-        variant: "destructive"
-      });
+
+    try {
+      await eventService.rejectEvent(selectedEvent.id, rejectReason);
+      await loadEvents();
+      toast({ title: 'Đã từ chối', variant: 'destructive' });
+    } catch (error) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    } finally {
       setIsRejectOpen(false);
       setRejectReason('');
       setSelectedEvent(null);
-    }, 500);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedEvent) return;
-    setTimeout(() => {
-      setEvents(events.map(ev =>
-        ev.id === selectedEvent.id ? { ...ev, status: 'DELETED' } : ev
-      ));
-      toast({
-        title: "Đã xóa",
-        description: "Đã xóa sự kiện thành công",
-      });
+
+    try {
+      await eventService.deleteEvent(selectedEvent.id);
+      await loadEvents();
+      toast({ title: 'Đã xóa sự kiện' });
+    } catch (error) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    } finally {
       setIsDeleteOpen(false);
       setSelectedEvent(null);
-    }, 500);
+    }
   };
 
   return (
