@@ -6,9 +6,6 @@ import { Eye, EyeOff } from "lucide-react";
 import { useSignup } from "@/hooks/useSignupForm";
 import { useAuth } from "@/context/AuthContext";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
-
 export default function SignupForm() {
   const router = useRouter();
   const { login } = useAuth();
