@@ -16,7 +16,7 @@ export const eventService = {
 
   getAllEvents: async (params = {}) => {
     const res = await axios.get(`${API_BASE_URL}/api/events`, { params });
-    return res.data;
+    return res;
   },
 
   getEventDetails: async (eventId) => {

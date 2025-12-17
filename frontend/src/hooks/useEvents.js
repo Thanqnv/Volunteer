@@ -23,8 +23,8 @@ export const useEvents = (initialPage = 1, limit = 9) => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await eventService.getAllEvents(page, limit);
-            const events = data?.events || [];
+            const response = await eventService.getAllEvents();
+            const events = response.data["data"] || [];
             
             console.log("Fetched events:", events);
 
