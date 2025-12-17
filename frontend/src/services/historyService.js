@@ -1,38 +1,32 @@
-/**
- * @file historyService.js
- * @description Service to fetch user activity history (events, interactions) with simulated latency.
- */
+import axios from "axios";
+import { getEvents } from "./managerService";
 
-import { MOCK_EVENTS, MOCK_INTERACTIONS } from '@/data/history-mock';
-
-// Simulate API delay
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export const historyService = {
-    getEvents: async (filters = {}) => {
-        await delay(800); // Simulate network latency
-        // In a real app, filters would be passed to the API
-        return {
-            data: MOCK_EVENTS,
-            total: MOCK_EVENTS.length
-        };
-    },
+    getEvents: async (userId, filters = {}) => {
+    const response = await axios.get(
+        `${API_BASE_URL}/api/users/${userId}/events`,
+        { params: filters }
+    );
+    return response.data;
 
-    getInteractions: async (filters = {}) => {
-        await delay(600);
-        return {
-            data: MOCK_INTERACTIONS,
-            total: MOCK_INTERACTIONS.length
-        };
-    },
+    // getInteractions: async (filters = {}) => {
+    //     await delay(600);
+    //     return {
+    //         data: MOCK_INTERACTIONS,
+    //         total: MOCK_INTERACTIONS.length
+    //     };
+    // },
 
-    getStats: async () => {
-        await delay(500);
-        return {
-            totalEvents: MOCK_EVENTS.length,
-            completed: MOCK_EVENTS.filter(e => e.status === 'completed').length,
-            interactions: MOCK_INTERACTIONS.length,
-            thisMonth: 2 // Hardcoded for demo
-        };
-    }
+    // getStats: async () => {
+    //     await delay(500);
+    //     return {
+    //         totalEvents: MOCK_EVENTS.length,
+    //         completed: MOCK_EVENTS.filter(e => e.status === 'completed').length,
+    //         interactions: MOCK_INTERACTIONS.length,
+    //         thisMonth: 2 // Hardcoded for demo
+    //     };
+    // }
+},
 };
