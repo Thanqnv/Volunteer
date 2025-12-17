@@ -39,9 +39,9 @@ export const eventService = {
     try {
       // const response = await fetch(`${API_BASE_URL}/api/events`);
       const response = await axios.get(`${API_BASE_URL}/api/events`);
-      if (!response.ok) throw new Error("Lỗi khi tải danh sách sự kiện");
+      if (!response.status === 200) throw new Error("Lỗi khi tải danh sách sự kiện");
 
-      const payload = await response.json();
+      const payload = await response.data;
       const events = (payload?.data || payload?.events || []).map(
         normalizeEvent
       );

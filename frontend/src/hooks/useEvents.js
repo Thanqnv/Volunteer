@@ -25,6 +25,8 @@ export const useEvents = (initialPage = 1, limit = 9) => {
         try {
             const data = await eventService.getAllEvents(page, limit);
             const events = data?.events || [];
+            
+            console.log("Fetched events:", events);
 
             if (events.length > 0) {
                 setAllEvents(events);
@@ -32,20 +34,9 @@ export const useEvents = (initialPage = 1, limit = 9) => {
                 setTotalPages(data.totalPages || Math.max(1, Math.ceil((data.total || events.length) / limit)));
                 return;
             }
-
-            // Fallback to mocks
-            const mocks = eventService.getMockEvents();
-            setAllEvents(mocks);
-            setFeaturedEvents(mocks.slice(0, 5));
-            setTotalPages(1);
         } catch (err) {
             console.error("Fetch error:", err);
             setError(err.message);
-            // Fallback to mocks
-            const mocks = eventService.getMockEvents();
-            setAllEvents(mocks);
-            setFeaturedEvents(mocks.slice(0, 5));
-            setTotalPages(1);
         } finally {
             setIsLoading(false);
         }
