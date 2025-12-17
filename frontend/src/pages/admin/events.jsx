@@ -7,6 +7,7 @@ import BasicPagination from "@/components/ui/pagination.jsx";
 import EventCard from "@/components/ui/card-detail.jsx";
 import SlideUpDetail from "@/components/ui/slide-up.jsx";
 import SearchBar from "@/components/ui/search-bar";
+import axios from 'axios';
 
 import "react-multi-carousel/lib/styles.css";
 
@@ -69,7 +70,8 @@ export default function EventShowcase() {
   const fetchFeaturedEvents = useCallback(async () => {
     if (!baseUrl) return;
     try {
-      const res = await fetch(`${baseUrl}/api/dashboard`);
+      // const res = await fetch(`${baseUrl}/api/dashboard`);
+      const res = await axios.get(`${baseUrl}/api/dashboard`);
       const json = await res.json();
       const list = json?.data?.trendingEvents || json?.trendingEvents || [];
       setFeaturedEvents(list.map(normalizeEvent));
@@ -83,7 +85,8 @@ export default function EventShowcase() {
     if (!baseUrl) return;
     setError(null);
     try {
-      const res = await fetch(`${baseUrl}/api/admin/events`);
+      // const res = await fetch(`${baseUrl}/api/admin/events`);
+      const res = await axios.get(`${baseUrl}/api/admin/events`);
       const json = await res.json();
       const list = json?.data || json?.events || [];
       setAllEvents(list.map(normalizeEvent));
@@ -126,12 +129,14 @@ export default function EventShowcase() {
   );
 
   const handleRegister = async (id) => {
-    await fetch(`${baseUrl}/api/events/${id}/register`, { method: "POST" });
+    // await fetch(`${baseUrl}/api/events/${id}/register`, { method: "POST" });
+    await axios.post(`${baseUrl}/api/events/${id}/register`);
     getAllEvents();
   };
 
   const handleCancel = async (id) => {
-    await fetch(`${baseUrl}/api/events/${id}/cancel`, { method: "POST" });
+    // await fetch(`${baseUrl}/api/events/${id}/cancel`, { method: "POST" });
+    await axios.post(`${baseUrl}/api/events/${id}/cancel`);
     getAllEvents();
   };
 

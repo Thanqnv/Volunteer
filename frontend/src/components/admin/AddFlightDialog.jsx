@@ -45,15 +45,27 @@ export function AddFlightDialog() {
       basePrice: parseInt(flightData.basePrice, 10),
     };
     try {
-        const response = await fetch(createFlightApi, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "admin": "true",
-              "authorization": "Bearer " + localStorage.getItem("token")
+        // const response = await fetch(createFlightApi, {
+        //     method: "POST",
+        //     headers: {
+        //       "Content-Type": "application/json",
+        //       "admin": "true",
+        //       "authorization": "Bearer " + localStorage.getItem("token")
+        //     },
+        //     body: JSON.stringify(formattedFlightData)
+        // })
+        const response = await axios.post(createFlightApi,
+            {
+              formattedFlightData
             },
-            body: JSON.stringify(formattedFlightData)
-        })
+            {
+              headers: {
+                "Content-Type": "application/json",
+                "admin": "true",
+                "authorization": "Bearer " + localStorage.getItem("token")
+              },
+            }
+        )
         if (!response.ok) {
             throw new Error("failed")
         }

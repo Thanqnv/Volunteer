@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import axios from "axios";
 
 export function EditFlightDialog({ flight, onClose, onSave }) {
   const [editedFlight, setEditedFlight] = useState(flight)
@@ -17,18 +18,31 @@ export function EditFlightDialog({ flight, onClose, onSave }) {
     const editFlightApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/flight/update?id=${editedFlight.flightId}`
   
     try {
-        const response = await fetch(editFlightApi, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "admin": "true",
-                "authorization": "Bearer " + localStorage.getItem("token")
-            }, 
-            body: JSON.stringify({
+        // const response = await fetch(editFlightApi, {
+        //     method: "PUT",
+        //     headers: {
+        //         "Content-Type": "application/json",
+        //         "admin": "true",
+        //         "authorization": "Bearer " + localStorage.getItem("token")
+        //     },
+        //     body: JSON.stringify({
+        //         "arrivalTime": {"seconds": Date.parse(editedFlight.arrivalTime)/1000},
+        //         "departureTime": {"seconds": Date.parse(editedFlight.departureTime)/1000},
+        //     })
+        // })
+        const response = await axios.put(editFlightApi,
+            {
                 "arrivalTime": {"seconds": Date.parse(editedFlight.arrivalTime)/1000},
                 "departureTime": {"seconds": Date.parse(editedFlight.departureTime)/1000},
-            })
-        })
+            },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    "admin": "true",
+                    "authorization": "Bearer " + localStorage.getItem("token")
+                },
+            },
+        );
         if (!response.ok) {
             throw new Error("failed")
         }

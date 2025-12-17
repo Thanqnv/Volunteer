@@ -11,9 +11,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8
 export const statisticService = {
     getStatistics: async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/statistic`, {
-                method: "GET",
-            });
+            // const response = await fetch(`${API_BASE_URL}/api/statistic`, {
+            //     method: "GET",
+            // });
+            const response = await axios.get(`${API_BASE_URL}/api/statistic`);
             if (!response.ok) {
                 // If backend fails or not implemented, return mock data for now 
                 // to prevent breaking the UI during refactor if the user hasn't set up the API yet.

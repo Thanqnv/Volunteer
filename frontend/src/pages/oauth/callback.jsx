@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import axios from 'axios';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
@@ -26,13 +27,23 @@ export default function OAuthCallback() {
       // Fetch current user to determine role-based redirect
       (async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            credentials: "include",
-          });
+          // const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          //   headers: {
+          //     "Content-Type": "application/json",
+          //     Authorization: `Bearer ${token}`,
+          //   },
+          //   credentials: "include",
+          // });
+          const res = await axios.get(
+              `${API_BASE_URL}/api/auth/me`,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                withCredentials: true,
+              },
+          );
 
           if (!res.ok) throw new Error(`status ${res.status}`);
           const payload = await res.json();

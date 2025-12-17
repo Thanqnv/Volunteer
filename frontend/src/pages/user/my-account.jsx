@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useAccountInfo } from "@/hooks/useAccountInfo";
 import { useEffect, useState } from "react";
 import { User, History, Lock } from "lucide-react";
+import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
@@ -36,13 +37,19 @@ export default function AccountPage() {
       const bookings = await Promise.all(
         personalInfo.bookingHistory.map(async (bookingId) => {
           try {
-            const response = await fetch(
-              `${API_BASE_URL}/api/booking?id=${bookingId}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
+            // const response = await fetch(
+            //   `${API_BASE_URL}/api/booking?id=${bookingId}`,
+            //   {
+            //     headers: {
+            //       Authorization: `Bearer ${token}`,
+            //     },
+            //   }
+            // );
+            const response = await axios.get(
+                `${API_BASE_URL}/api/booking?id=${bookingId}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
             );
 
             if (!response.ok) {

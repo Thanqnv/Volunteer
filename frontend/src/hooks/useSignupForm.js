@@ -1,6 +1,7 @@
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useForm } from "@/hooks/useForm";
+import axios from 'axios';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
@@ -43,17 +44,30 @@ export const useSignup = (onSuccess, initialRole = "VOLUNTEER") => {
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-          name: fullName,
-          role: formData.role,
-        }),
-      });
+      // const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     email: formData.email,
+      //     password: formData.password,
+      //     confirmPassword: formData.confirmPassword,
+      //     name: fullName,
+      //     role: formData.role,
+      //   }),
+      // });
+      const response = await axios.post(
+          `${API_BASE_URL}/api/auth/register`,
+          {
+            email: formData.email,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword,
+            name: fullName,
+            role: formData.role,
+          },
+          {
+            headers: { "Content-Type": "application/json" },
+          },
+      );
 
       if (response.ok) {
         await response.json();

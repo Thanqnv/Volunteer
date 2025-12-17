@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import get from "lodash.get";
+import axios from 'axios';
 
 export default function GroupDetail() {
   const router = useRouter();
@@ -14,7 +15,8 @@ export default function GroupDetail() {
       const getAllGroupApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/exchange-channel/groups`;
 
       try {
-        const response = await fetch(getAllGroupApi);
+        // const response = await fetch(getAllGroupApi);
+        const response = await axios.get(getAllGroupApi);
         if (!response.ok) throw new Error("Failed to fetch");
         const data = await response.json();
         setGroups(data);
