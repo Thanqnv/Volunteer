@@ -1,10 +1,17 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.service.impl;
 
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreateEventRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.RegistrationCompletionRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.UpdateEventRequest;
@@ -29,13 +36,6 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RegistrationReposi
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EventService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.PostRankingService;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * EventServiceImpl
@@ -583,5 +583,17 @@ public class EventServiceImpl implements EventService {
 
     private boolean isAdmin(User user) {
         return hasRole(user, UserRoleType.ADMIN.name());
+    }
+
+    @Override
+    public long countUpcomingEvents() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime oneMonthLater = now.plusMonths(1);
+        
+        return eventRepository.countUpcomingEvents(
+            EventApprovalStatus.APPROVED,
+            now,
+            oneMonthLater
+        );
     }
 }

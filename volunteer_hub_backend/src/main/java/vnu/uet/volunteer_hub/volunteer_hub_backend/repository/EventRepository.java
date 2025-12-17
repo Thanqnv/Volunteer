@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -41,4 +40,17 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
             """, nativeQuery = true)
     List<EventAutocompleteDTO> autocompleteTitle(@Param("keyword") String keyword,
             @Param("limit") int limit);
+
+    /**
+     * Đếm số lượng sự kiện sắp diễn ra trong khoảng thời gian 1 tháng sắp tới
+     */
+    @Query("SELECT COUNT(e) FROM Event e WHERE " +
+            "e.adminApprovalStatus = :status " +
+            "AND e.isArchived = false " +
+            "AND e.startTime >= :startTime " +
+            "AND e.startTime <= :endTime")
+    long countUpcomingEvents(
+            @Param("status") EventApprovalStatus status,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
 }

@@ -1,27 +1,37 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.api;
 
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreateEventRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.UpdateEventRequest;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.*;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.CheckInResponseDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.EventResponseDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.JoinEventResponse;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ParticipantResponseDTO;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.ResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Event;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.EventApprovalStatus;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EventService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.UserService;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
@@ -175,6 +185,18 @@ public class EventAPI {
                 ResponseDTO.<CheckInResponseDTO>builder()
                         .message(response.getMessage())
                         .data(response)
+                        .build());
+    }
+    /**
+     * Lấy số lượng sự kiện sắp diễn ra trong vòng 1 tháng
+     */
+    @GetMapping("/upcoming-count")
+    public ResponseEntity<?> getUpcomingEventsCount() {
+        long count = eventService.countUpcomingEvents();
+        return ResponseEntity.ok(
+                ResponseDTO.<Long>builder()
+                        .message("Upcoming events count retrieved successfully")
+                        .data(count)
                         .build());
     }
 

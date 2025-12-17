@@ -49,4 +49,22 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
     @Query("SELECT r FROM Registration r WHERE r.event.id IN :eventIds AND r.volunteer.id = :volunteerId")
     List<Registration> findByEventIdInAndVolunteerId(@Param("eventIds") List<UUID> eventIds,
             @Param("volunteerId") UUID volunteerId);
+
+    /**
+     * Đếm số lượng sự kiện mà user đã đăng ký
+     * @param volunteerId ID của volunteer (user)
+     * @return Số lượng sự kiện đã đăng ký
+     */
+    @Query("SELECT COUNT(r) FROM Registration r WHERE r.volunteer.id = :volunteerId " +
+           "AND r.registrationStatus IN ('PENDING', 'APPROVED', 'CHECKED_IN', 'COMPLETED')")
+    long countActiveRegistrationsByVolunteerId(@Param("volunteerId") UUID volunteerId);
+
+    /**
+     * Đếm số lượng sự kiện mà user đã tham gia
+     * @param volunteerId ID của volunteer (user)
+     * @return Số lượng sự kiện đã tham gia
+     */
+    @Query("SELECT COUNT(r) FROM Registration r WHERE r.volunteer.id = :volunteerId " +
+           "AND r.registrationStatus IN ('CHECKED_IN', 'COMPLETED')")
+    long countAttendedEventsByVolunteerId(@Param("volunteerId") UUID volunteerId);
 }

@@ -8,7 +8,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 const getAuthHeader = () => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
+  Authorization: `Bearer ${localStorage.getItem("token")}`,
 });
 
 export const eventService = {
@@ -93,5 +93,10 @@ export const eventService = {
       { headers: getAuthHeader() }
     );
     return res.data;
+  },
+
+  getUpcomingEventsCount: async () => {
+    const res = await axios.get(`${API_BASE_URL}/api/events/upcoming-count`);
+    return res.data?.data || 0;
   },
 };

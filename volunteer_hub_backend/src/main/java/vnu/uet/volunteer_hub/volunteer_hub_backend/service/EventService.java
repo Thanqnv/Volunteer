@@ -251,4 +251,9 @@ public interface EventService {
             RegistrationCompletionRequest request,
             UUID actorId
     );
+
+    /**
+     * @return số lượng sự kiện sắp diễn ra
+     */
+    long countUpcomingEvents();
 }
