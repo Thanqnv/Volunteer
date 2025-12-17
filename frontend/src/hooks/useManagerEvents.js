@@ -8,19 +8,23 @@ export function useManagerEvents() {
     const [alert, setAlert] = useState(null);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const data = await managerService.getEvents();
-                setManagedEvents(data.managed);
-                setPendingEvents(data.pending);
-            } catch (error) {
-                console.error("Failed to fetch events", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        // const fetchData = async () => {
+        //     try {
+        //         const data = await managerService.getEvents();
+        //         setManagedEvents(data.managed);
+        //         setPendingEvents(data.pending);
+        //     } catch (error) {
+        //         console.error("Failed to fetch events", error);
+        //     } finally {
+        //         setLoading(false);
+        //     }
+        // };
 
-        fetchData();
+        // fetchData();
+        const response = async () => await managerService.getEvents();
+        setManagedEvents(response.data.managed);
+        setPendingEvents(response.data.pending);
+        setLoading(false);
     }, []);
 
     const handleDelete = (tab, index) => {

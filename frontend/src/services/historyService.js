@@ -9,7 +9,7 @@ export const historyService = {
         `${API_BASE_URL}/api/users/${userId}/events`,
         { params: filters }
     );
-    return response.data;
+    return response;
 
     // getInteractions: async (filters = {}) => {
     //     await delay(600);
