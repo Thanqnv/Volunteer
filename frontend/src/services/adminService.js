@@ -78,5 +78,16 @@ export const adminService = {
             headers: getAuthHeader()
         });
         return response.data;
+    },
+
+    // Create a new admin user
+    createAdmin: async (payload) => {
+        const response = await axios.post(
+            `${API_BASE_URL}/api/admin/users`,
+            payload,
+            { headers: getAuthHeader() }
+        )
+        return response.data;
     }
+
 };

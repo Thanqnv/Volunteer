@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, } from
 import { Input } from "@/components/ui/input"
 import { Plus } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import axios from 'axios';
+import { adminService } from '@/services/adminService'
 
 export default function AdminManagementPage() {
   const router = useRouter()
@@ -35,82 +35,80 @@ export default function AdminManagementPage() {
   })
 
   const registerAdmin = async () => {
-    const registerAdminApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin`
-
     try {
-      // const response = await fetch(registerAdminApi, {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     "admin": "true",
-      //     "authorization": "Bearer " + localStorage.getItem("token")
-      //   },
-      //   body: JSON.stringify(formData)
-      // })
-      const response = await axios.post(
-          registerAdminApi,
-          {
-            formData,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "admin": "true",
-              "authorization": "Bearer " + localStorage.getItem("token")
-            },
-          },
-      );
-      if (!response.ok) {
-        throw new Error("Send request failed")
-      }
+      await adminService.createAdmin(formData)
+      await getAllAdmins()
 
-      getAllAdmins()
+      toast({
+        title: "Thành công",
+        description: "Quản trị viên mới đã được thêm",
+      })
     } catch (error) {
       toast({
         title: "Lỗi",
-        description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
+        description: error.message || "Không thể tạo admin",
         variant: "destructive"
       })
     }
   }
 
+
+  // const getAllAdmins = async () => {
+  //   const getAllAdminsApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/all`
+
+  //   try {
+  //     // const response = await fetch(getAllAdminsApi, {
+  //     //   method: "GET",
+  //     //   headers: {
+  //     //     "admin": "true",
+  //     //     "authorization": "Bearer " + localStorage.getItem("token")
+  //     //   },
+  //     // })
+  //     const response = await axios.get(
+  //         getAllAdminsApi,
+  //         {
+  //           headers: {
+  //             "admin": "true",
+  //             "authorization": "Bearer " + localStorage.getItem("token")
+  //           },
+  //         },
+  //     );
+  //     if (!response.ok) {
+  //       throw new Error("Send request failed")
+  //     }
+
+  //     const res = await response.json()
+  //     setAdmins(res.data.map(a => {
+  //       return {
+  //         "name": `${a.firstName} ${a.lastName}`,
+  //         "email": a.email,
+  //         "createdAt": a.createdAt ? new Date(a.createdAt.seconds * 1000).toISOString().split('T')[0] : '2024-12-21'
+  //       }
+  //     }))
+  //   } catch (error) {
+  //     console.log(error)
+  //     toast({
+  //       title: "Lỗi",
+  //       description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
+  //       variant: "destructive"
+  //     })
+  //   }
+  // }
   const getAllAdmins = async () => {
-    const getAllAdminsApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/all`
-
     try {
-      // const response = await fetch(getAllAdminsApi, {
-      //   method: "GET",
-      //   headers: {
-      //     "admin": "true",
-      //     "authorization": "Bearer " + localStorage.getItem("token")
-      //   },
-      // })
-      const response = await axios.get(
-          getAllAdminsApi,
-          {
-            headers: {
-              "admin": "true",
-              "authorization": "Bearer " + localStorage.getItem("token")
-            },
-          },
-      );
-      if (!response.ok) {
-        throw new Error("Send request failed")
-      }
+      const res = await adminService.getAllUsers(1, 100, 'admin');
 
-      const res = await response.json()
-      setAdmins(res.data.map(a => {
-        return {
-          "name": `${a.firstName} ${a.lastName}`,
-          "email": a.email,
-          "createdAt": a.createdAt ? new Date(a.createdAt.seconds * 1000).toISOString().split('T')[0] : '2024-12-21'
-        }
-      }))
+      setAdmins(
+        res.data.map(a => ({
+          name: `${a.firstName} ${a.lastName}`,
+          email: a.email,
+          createdAt: a.createdAt ? new Date(a.createdAt).toISOString().split('T')[0] : '-'
+        }))
+      )
     } catch (error) {
-      console.log(error)
       toast({
         title: "Lỗi",
-        description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
+        description: error.message || "Không thể tải danh sách admin",
         variant: "destructive"
       })
     }
