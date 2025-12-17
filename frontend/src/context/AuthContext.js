@@ -13,10 +13,10 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = () => {
       const token = localStorage.getItem("token");
       const role = localStorage.getItem("userRole");
-      const id = localStorage.getItem("userId");
+      const userId = localStorage.getItem("userId");
+      setUserId(userId);
       setIsAuthenticated(!!token);
       setUserRole(role);
-      setUserId(id);
     };
 
     checkAuth();
@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const login = (token, role, id) => {
+  const login = (token, role, userId) => {
     localStorage.setItem("token", token);
     if (role) {
       localStorage.setItem("userRole", role);
@@ -36,12 +36,12 @@ export const AuthProvider = ({ children }) => {
       const storedRole = localStorage.getItem("userRole");
       setUserRole(storedRole);
     }
-    if (id) {
-      localStorage.setItem("userId", id);
-      setUserId(id);
+    if (userId) {
+      localStorage.setItem("userId", userId);
+      setUserId(userId);
     } else {
-      const storedId = localStorage.getItem("userId");
-      setUserId(storedId);
+      const storedUserId = localStorage.getItem("userId");
+      setUserId(storedUserId);
     }
     setIsAuthenticated(true);
   };

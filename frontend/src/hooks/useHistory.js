@@ -16,28 +16,21 @@ export const useHistory = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            try {
-                setIsLoading(true);
-                // Execute data fetching in parallel
-                const [eventsRes, interactionsRes, statsRes] = await Promise.all([
-                    historyService.getEvents(),
-                    historyService.getInteractions(),
-                    historyService.getStats()
-                ]);
-
-                setEvents(eventsRes.data);
-                setInteractions(interactionsRes.data);
-                setStats(statsRes);
-            } catch (err) {
-                console.error("Failed to fetch history data:", err);
+            let userId = localStorage.getItem('userId');
+            console.log('Fetched userId from localStorage:', userId);
+            await historyService.getEvents(userId).then(response => {
+                setEvents(response.data.data);
+            }).catch(err => {
                 setError(err);
-            } finally {
+            }).finally(() => {
                 setIsLoading(false);
-            }
+            });
         };
 
         fetchData();
     }, []);
+
+    
 
     return { events, interactions, stats, isLoading, error };
 };
@@ -49,10 +42,10 @@ export const useHistoryFilter = (events, interactions) => {
     const [typeFilter, setTypeFilter] = useState('all');
 
     const filteredEvents = useMemo(() => {
-        return events.filter(event => {
-            const matchSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchStatus = statusFilter === 'all' || event.status === statusFilter;
-            const matchDate = !dateRange ? true : (new Date(event.date) >= dateRange.from && new Date(event.date) <= (dateRange.to || dateRange.from));
+        return events.filter(item => {
+            const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchStatus = statusFilter === 'all' || item.status === statusFilter;
+            const matchDate = !dateRange || (new Date(item.date) >= dateRange[0] && new Date(item.date) <= dateRange[1]);
             return matchSearch && matchStatus && matchDate;
         });
     }, [events, searchQuery, statusFilter, dateRange]);

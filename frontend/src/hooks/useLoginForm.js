@@ -65,9 +65,10 @@ export const useLogin = (onSuccess, initialRole = "VOLUNTEER") => {
       }
 
       const resolvedRole = response?.data?.role || response?.role || formData.role;
+      const userId = response?.data?.userId || response?.userId || null;
 
       // Quan trọng: login(token, role)
-      login(token, resolvedRole);
+      login(token, resolvedRole, userId);
 
       toast({
         title: serverMessage || "Đăng nhập thành công",
