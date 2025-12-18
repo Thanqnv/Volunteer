@@ -1,339 +1,318 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { useRouter } from 'next/router'
-import { toast } from '@/hooks/use-toast'
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useRouter } from "next/router";
+import { toast } from "@/hooks/use-toast";
+import { userService } from "@/services/userService";
+import { authService } from "@/services/authService";
 
-export default function AdminProfilePage() {
-    const router = useRouter()
+export default function UserProfilePage() {
+  const router = useRouter();
 
-    const [admin, setAdmin] = useState({
-        uid: '',
-        firstName: '',
-        lastName: '',
-        email: ''
-    })
-    const [editForm, setEditForm] = useState({ ...admin })
-    const [oldPassword, setOldPassword] = useState('')
-    const [newPassword, setNewPassword] = useState('')
-    const [confirmPassword, setConfirmPassword] = useState('')
+  const [user, setUser] = useState({
+    uid: "",
+    name: "",
+    email: "",
+  });
+  const [editForm, setEditForm] = useState({
+    name: "",
+  });
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-    useEffect(() => {
-        const token = localStorage.getItem('token')
-        if (!token) {
-            router.push('/admin')
-        }
-        else getAdmin()
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/user/login");
+    } else getUser();
+  }, [router]);
 
-    }, [router])
+  const getUser = async () => {
+    try {
+      // Lấy userId từ localStorage hoặc từ token
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
 
-    const getAdmin = async () => {
-        const getAdminApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin`
+      const response = await userService.getUserById(userId);
+      const fullName = response.data.name || "";
 
-        try {
-            // const response = await fetch(getAdminApi, {
-            //     method: "GET",
-            //     headers: {
-            //         "admin": "true",
-            //         "authorization": "Bearer " + localStorage.getItem("token")
-            //     },
-            // })
-            const response = await axios.get(
-                getAdminApi,
-                {
-                    headers: {
-                        "admin": "true",
-                        "authorization": "Bearer " + localStorage.getItem("token")
-                    },
-                },
-            );
-            if (!response.ok) {
-                throw new Error("Send request failed")
-            }
+      setUser({
+        uid: response.data.userId,
+        name: fullName,
+        email: response.data.email,
+      });
+      setEditForm({
+        name: fullName,
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      toast({
+        title: "Lỗi",
+        description:
+          "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
+        variant: "destructive",
+      });
+    }
+  };
 
-            const res = await response.json()
-            setAdmin({ "uid": res.data.uid, "firstName": res.data.firstName, "lastName": res.data.lastName, "email": res.data.email })
-        } catch (error) {
-            toast({
-                title: "Lỗi",
-                description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
-                variant: "destructive"
-            })
-        }
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+
+    try {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+
+      await userService.updateUserProfile(userId, {
+        name: editForm.name.trim(),
+      });
+
+      toast({
+        title: "Thành công",
+        description: "Thông tin của bạn đã được cập nhật",
+      });
+      getUser();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Cập nhật thông tin thất bại",
+        description:
+          error.response?.data?.message ||
+          "Đã có lỗi xảy ra khi kết nối với máy chủ",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+
+      await userService.deleteUserAccount(userId);
+
+      toast({
+        title: "Thành công",
+        description: "Tài khoản đã được xóa",
+      });
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      router.push("/user/login");
+    } catch (error) {
+      toast({
+        title: "Xóa tài khoản thất bại",
+        description:
+          error.response?.data?.message ||
+          "Đã có lỗi xảy ra khi kết nối với máy chủ",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Lỗi",
+        description: "Mật khẩu được gõ lại không chính xác!",
+        variant: "destructive",
+      });
+      return;
     }
 
-    const handleUpdateAdmin = async (e) => {
-        e.preventDefault()
-        const updateAdminApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin`
+    try {
+      await userService.changePassword({
+        current: oldPassword,
+        new: newPassword,
+      });
 
-        try {
-            // const response = await fetch(updateAdminApi, {
-            //     method: "PUT",
-            //     headers: {
-            //         "Content-Type": "application/json",
-            //         "admin": "true",
-            //         "authorization": "Bearer " + localStorage.getItem("token")
-            //     },
-            //     body: JSON.stringify(editForm)
-            // })
-            const response = await axios.put(
-                updateAdminApi,
-                {
-                    editForm,
-                },
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                        "admin": "true",
-                        "authorization": "Bearer " + localStorage.getItem("token")
-                    },
-                },
-            );
-            if (!response.ok) {
-                throw new Error("Send request failed")
-            }
-            toast({
-                title: "Thành công",
-                description: "Thông tin của bạn đã được cập nhật",
-            })
-            getAdmin()
-        } catch (error) {
-            toast({
-                title: "Cập nhật thông tin thất bại",
-                description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
-                variant: "destructive"
-            })
-        }
+      toast({
+        title: "Thành công",
+        description: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại",
+      });
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      router.push("/user/login");
+    } catch (error) {
+      toast({
+        title: "Đổi mật khẩu thất bại",
+        description:
+          error.response?.data?.message ||
+          "Mật khẩu hiện tại không đúng hoặc có lỗi xảy ra",
+        variant: "destructive",
+      });
     }
+  };
 
-    const handleDeleteAccount = async () => {
-        const deleteAdminApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin`
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    router.push("/user/login");
+  };
 
-        try {
-            // const response = await fetch(deleteAdminApi, {
-            //     method: "DELETE",
-            //     headers: {
-            //         "admin": "true",
-            //         "authorization": "Bearer " + localStorage.getItem("token")
-            //     },
-            // })
-            const response = await axios.delete(
-                deleteAdminApi,
-                {
-                    headers: {
-                        "admin": "true",
-                        "authorization": "Bearer " + localStorage.getItem("token")
-                    },
-                },
-            );
-            if (!response.ok) {
-                throw new Error("Send request failed")
-            }
-        } catch (error) {
-            toast({
-                title: "Xóa tài khoản thất bại",
-                description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
-                variant: "destructive"
-            })
-        }
+  return (
+    <div className="container mx-auto pt-10 pl-64 space-y-6">
+      <h1 className="text-2xl font-semibold">Hồ Sơ Cá Nhân</h1>
 
-        localStorage.removeItem('token')
-        router.push('/admin')
-    }
+      <Card>
+        <CardHeader>
+          <CardTitle>Thông tin cơ bản</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <p>
+              <strong>UID:</strong> {user.uid}
+            </p>
+            <p>
+              <strong>Họ và Tên:</strong> {user.name}
+            </p>
+            <p>
+              <strong>Email:</strong> {user.email}
+            </p>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>Chỉnh sửa</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Thông tin hồ sơ</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleUpdateUser}>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Họ và Tên</Label>
+                    <Input
+                      id="name"
+                      value={editForm.name}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
+                      placeholder="Ví dụ: Nguyễn Văn Thắng"
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="mt-4">
+                  <Button type="submit">Lưu thay đổi</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardFooter>
+      </Card>
 
-    const handlePasswordReset = async (e) => {
-        e.preventDefault()
-        const changePasswordApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/customer/change-password?`
+      <Card>
+        <CardHeader>
+          <CardTitle>Đặt lại mật khẩu</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div>
+              <Label htmlFor="oldPassword">Mật khẩu hiện tại</Label>
+              <Input
+                id="oldPassword"
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="newPassword">Mật khẩu mới</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="confirmPassword">Gõ lại mật khẩu mới</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+            <Button type="submit">Lưu thay đổi</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-        if (newPassword !== confirmPassword) {
-            toast({
-                title: "Lỗi",
-                description: "Mật khẩu được gõ lại không chính xác!",
-                variant: "destructive"
-            })
-            return
-        }
+      <Card>
+        <CardHeader>
+          <CardTitle>Cài đặt tài khoản</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">Xóa tài khoản</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Bạn có chắc chắn muốn xóa tài khoản?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Sẽ không thể khôi phục tài khoản một khi đã được xóa. Tất cả
+                  những dữ liệu liên quan tới tài khoản của bạn đều sẽ không
+                  được lưu lại.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Thoát</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount}>
+                  Xóa tài khoản
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-        try {
-            // const response = await fetch(changePasswordApi +
-            //     new URLSearchParams({
-            //         id: admin.uid,
-            //         admin: "true",
-            //     }).toString(), {
-            //     method: "PUT",
-            //     headers: {
-            //         "Content-Type": "application/json",
-            //         "admin": "true",
-            //         "authorization": "Bearer " + localStorage.getItem("token")
-            //     },
-            //     body: JSON.stringify({ "email": admin.email, "oldPassword": oldPassword, "newPassword": newPassword })
-            // })
-            const response = await axios.put(
-                changePasswordApi,
-                {
-                    "email": admin.email,
-                    "oldPassword": oldPassword,
-                    "newPassword": newPassword,
-                },
-                {
-                    params: {
-                      id: admin.uid,
-                      admin: true,
-                    },
-                    headers: {
-                        "Content-Type": "application/json",
-                        "admin": "true",
-                        "authorization": "Bearer " + localStorage.getItem("token")
-                    },
-                }
-            )
-            if (!response.ok) {
-                throw new Error("Send request failed")
-            }
-            toast({
-                title: "Thành công",
-                description: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại",
-            })
-            router.push("/admin")
-        } catch (error) {
-            toast({
-                title: "Đổi mật khẩu thất bại",
-                description: "Đã có lỗi xảy ra khi kết nối với máy chủ, vui lòng tải lại trang hoặc đăng nhập lại",
-                variant: "destructive"
-            })
-        }
-    }
-
-    const handleLogout = () => {
-        localStorage.removeItem('token')
-        router.push("/admin")
-    }
-
-    return (
-        <div className="container mx-auto pt-10 pl-64 space-y-6">
-            <h1 className="text-2xl font-semibold">Hồ Sơ Cá Nhân</h1>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Thông tin cơ bản</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-2">
-                        <p><strong>UID:</strong> {admin.uid}</p>
-                        <p><strong>Tên:</strong> {admin.firstName}</p>
-                        <p><strong>Họ:</strong> {admin.lastName}</p>
-                        <p><strong>Email:</strong> {admin.email}</p>
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button>Chỉnh sửa</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Thông tin hồ sơ</DialogTitle>
-                            </DialogHeader>
-                            <form onSubmit={handleUpdateAdmin}>
-                                <div className="space-y-4">
-                                    <div>
-                                        <Label htmlFor="firstName">Tên</Label>
-                                        <Input
-                                            id="firstName"
-                                            value={editForm.firstName}
-                                            onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="lastName">Họ</Label>
-                                        <Input
-                                            id="lastName"
-                                            value={editForm.lastName}
-                                            onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <DialogFooter className="mt-4">
-                                    <Button type="submit">Lưu thay đổi</Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-                </CardFooter>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Đặt lại mật khẩu</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handlePasswordReset} className="space-y-4">
-                        <div>
-                            <Label htmlFor="oldPassword">Mật khẩu hiện tại</Label>
-                            <Input
-                                id="oldPassword"
-                                type="password"
-                                value={oldPassword}
-                                onChange={(e) => setOldPassword(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="newPassword">Mật khẩu mới</Label>
-                            <Input
-                                id="newPassword"
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="confirmPassword">Gõ lại mật khẩu mới</Label>
-                            <Input
-                                id="confirmPassword"
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                            />
-                        </div>
-                        <Button type="submit">Lưu thay đổi</Button>
-                    </form>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Cài đặt tài khoản</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive">Xóa tài khoản</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Bạn có chắc chắn muốn xóa tài khoản?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Sẽ không thể khôi phục tài khoản một khi đã được xóa. Tất cả những dữ liệu liên quan tới tài khoản của bạn đều sẽ không được lưu lại.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Thoát</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteAccount}>Xóa tài khoản</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-
-                    <Button onClick={handleLogout} variant="outline" className="ml-4">Đăng xuất</Button>
-                </CardContent>
-            </Card>
-        </div>
-    )
+          <Button onClick={handleLogout} variant="outline" className="ml-4">
+            Đăng xuất
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
-
