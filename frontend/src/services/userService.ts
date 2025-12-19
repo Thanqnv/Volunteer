@@ -31,7 +31,7 @@ export const userService = {
    */
   uploadAvatar: async (formData) => {
     const response = await axios.post(
-      `${API_BASE_URL}/api/users/me/avatar`,
+      `${API_BASE_URL}/api/upload/avatar`,
       formData,
       {
         headers: {

@@ -15,6 +15,7 @@ import {
   LogOut
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import AvatarUploadSection from './AvatarUploadSection'
 
 const navItems = [
   { name: 'Tổng quan', href: '/user/dashboard', icon: LayoutDashboard },
@@ -133,6 +134,10 @@ export default function Navbar() {
         }`}
       >
         <div className="flex flex-col w-full">
+          {/* Avatar Section at Top */}
+          <AvatarUploadSection isCollapsed={isCollapsed} />
+
+          {/* Logo Section */}
           <div className={`border-b border-zinc-800/50 ${isCollapsed ? 'p-4' : 'p-6'}`}>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
