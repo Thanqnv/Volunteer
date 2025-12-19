@@ -9,7 +9,6 @@ import org.hibernate.annotations.Comment;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -19,6 +18,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -64,15 +64,11 @@ public class Event extends BaseEntity {
     @Column(name = "end_time", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private LocalDateTime endTime;
 
-    @Comment("Hạn đăng ký tham gia sự kiện")
-    @Column(name = "registration_deadline", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    private LocalDateTime registrationDeadline;
-
     @Comment("Số lượng tình nguyện viên tối đa (null = không giới hạn)")
     @Column(name = "max_volunteers")
     private Integer maxVolunteers;
 
-    @Comment("Trạng thái duyệt của admin: PENDING, APPROVED, REJECTED")
+    @Comment("Trạng thái duyệt của admin: PENDING (chờ duyệt), APPROVED (đã duyệt), REJECTED (từ chối)")
     @Enumerated(EnumType.STRING)
     @Column(name = "admin_approval_status", length = 50, nullable = false)
     private EventApprovalStatus adminApprovalStatus = EventApprovalStatus.PENDING;
@@ -81,19 +77,20 @@ public class Event extends BaseEntity {
     @Column(name = "is_archived", nullable = false)
     private Boolean isArchived = Boolean.FALSE;
 
+    @Comment("Ảnh bìa/Thumbnail đại diện cho sự kiện")
+    @Column(name = "thumbnail_url", columnDefinition = "TEXT")
+    private String thumbnailUrl;
+
     @JsonIgnore
-    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Registration> registrations = new HashSet<>();
 
     @JsonIgnore
-    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Post> posts = new HashSet<>();
 
     @JsonIgnore
-    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Notification> notifications = new HashSet<>();
 
     @PrePersist

@@ -2,25 +2,20 @@ package vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Request DTO for email/password login.
+ * Request DTO cho việc login bằng email và password.
  */
 @Getter
 @Setter
 public class LoginRequest {
 
-    @NotBlank(message = "Email khong duoc de trong")
-    @Email(message = "Email khong hop le")
+    @NotBlank(message = "Email không được để trống")
+    @Email(message = "Email không hợp lệ")
     private String email;
 
-    @NotBlank(message = "Mat khau khong duoc de trong")
+    @NotBlank(message = "Mật khẩu không được để trống")
     private String password;
-
-    @NotBlank(message = "Vai tro khong duoc de trong")
-    @Pattern(regexp = "VOLUNTEER|MANAGER|ADMIN", message = "Role phai la VOLUNTEER, MANAGER hoac ADMIN")
-    private String role;
 }

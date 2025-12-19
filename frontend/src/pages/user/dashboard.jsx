@@ -110,9 +110,14 @@ export default function EventShowcase() {
           ) : error ? (
             <div className="text-center py-20 text-red-600">{error}</div>
           ) : filteredEvents.length > 0 ? (
-            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {displayedEvents.map((event) => (
-                <motion.div key={event.event_id}>
+                <motion.div
+                  key={event.event_id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
                   <EventCard
                     event={event}
                     onRegister={handleRegister}
@@ -121,7 +126,7 @@ export default function EventShowcase() {
                   />
                 </motion.div>
               ))}
-            </motion.div>
+            </div>
           ) : (
             <div className="text-center py-20 text-gray-500">
               Không tìm thấy sự kiện nào

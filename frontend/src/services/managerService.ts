@@ -15,7 +15,7 @@ export const login = async (credentials) => {
 }
 
 export async function getProfile(userId) {
-  const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`);
+  const response = await axios.get(`${API_BASE_URL}/api/users`);
   return response.data;
 }
 

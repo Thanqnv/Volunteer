@@ -1,17 +1,10 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.service.impl;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreateEventRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.RegistrationCompletionRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.UpdateEventRequest;
@@ -23,67 +16,52 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.RegistrationAppr
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.RegistrationCompletionResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.RegistrationRejectionResponseDTO;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Event;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Notification;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Registration;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.EventApprovalStatus;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.NotificationType;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.RegistrationStatus;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.UserRoleType;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.EventRepository;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.NotificationRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RegistrationRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.EventService;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.PostRankingService;
 
-/**
- * EventServiceImpl
- * <p>
- * Implementation cho toàn bộ nghiệp vụ liên quan đến sự kiện tình nguyện:
- * tạo sự kiện, duyệt sự kiện, đăng ký tham gia, check-in và hoàn thành.
- * </p>
- */
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
-
     private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
     private final UserRepository userRepository;
-    private final NotificationRepository notificationRepository;
     private final PostRankingService postRankingService;
-
-    /* ============================================================
-     * EVENT APPROVAL / BASIC MANAGEMENT
-     * ============================================================ */
 
     @Override
     public void approveEventStatus(UUID id) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Event not found"));
-
+        Event event = eventRepository.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
         event.setAdminApprovalStatus(EventApprovalStatus.APPROVED);
         eventRepository.save(event);
-
-        // Rebuild ranking vì visibility post có thể thay đổi
+        // rebuild ranking as visibility of posts under this event may have changed
         try {
             postRankingService.rebuildRankingFromDatabase();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // ignore failures; scheduled rebuild will pick up changes
         }
     }
 
     @Override
     public void rejectEventStatus(UUID id) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Event not found"));
-
+        Event event = eventRepository.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
         event.setAdminApprovalStatus(EventApprovalStatus.REJECTED);
         eventRepository.save(event);
-
         try {
             postRankingService.rebuildRankingFromDatabase();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // ignore
         }
     }
 
@@ -91,8 +69,7 @@ public class EventServiceImpl implements EventService {
     @Transactional
     public void deleteEvent(UUID id) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Event not found with id " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id " + id));
         eventRepository.delete(event);
     }
 
@@ -101,56 +78,24 @@ public class EventServiceImpl implements EventService {
         return eventRepository.findAll();
     }
 
-    /* ============================================================
-     * PUBLIC EVENTS
-     * ============================================================ */
-
     @Override
     public List<Event> getApprovedEvents() {
-        return eventRepository
-                .findAllByAdminApprovalStatusAndIsArchived(
-                        EventApprovalStatus.APPROVED,
-                        Boolean.FALSE);
+        return eventRepository.findAllByAdminApprovalStatusAndIsArchived(EventApprovalStatus.APPROVED, Boolean.FALSE);
     }
-
-    /**
-     * Lấy chi tiết sự kiện đã được duyệt (phục vụ event feed).
-     */
-    @Override
-    public Event getApprovedEvent(UUID id) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Event not found with id " + id));
-
-        if (event.getAdminApprovalStatus() != EventApprovalStatus.APPROVED
-                || Boolean.TRUE.equals(event.getIsArchived())) {
-            throw new EntityNotFoundException("Event is not approved or has been archived");
-        }
-
-        return event;
-    }
-
-    /* ============================================================
-     * CREATE / UPDATE EVENT
-     * ============================================================ */
 
     @Override
     @Transactional
     public EventResponseDTO createEvent(CreateEventRequest request, UUID creatorId) {
-
+        // Validate creator exists
         User creator = userRepository.findById(creatorId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("User not found with id: " + creatorId));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + creatorId));
 
-        // Only manager or admin can create events
-        if (!isManagerOrAdmin(creator)) {
-            throw new IllegalStateException("Only manager or admin can create events");
-        }
-
+        // Validate startTime < endTime
         if (!request.getStartTime().isBefore(request.getEndTime())) {
             throw new IllegalArgumentException("Start time must be before end time");
         }
 
+        // Create event entity
         Event event = new Event();
         event.setCreatedBy(creator);
         event.setTitle(request.getTitle());
@@ -159,160 +104,165 @@ public class EventServiceImpl implements EventService {
         event.setStartTime(request.getStartTime());
         event.setEndTime(request.getEndTime());
         event.setMaxVolunteers(request.getMaxVolunteers());
+        event.setThumbnailUrl(request.getThumbnailUrl());
         event.setAdminApprovalStatus(EventApprovalStatus.PENDING);
         event.setIsArchived(false);
 
         Event savedEvent = eventRepository.save(event);
 
-        notifyAdminsPendingEvent(savedEvent, creator);
-
-        return mapToEventResponse(savedEvent);
+        return EventResponseDTO.builder()
+                .eventId(savedEvent.getId())
+                .title(savedEvent.getTitle())
+                .description(savedEvent.getDescription())
+                .location(savedEvent.getLocation())
+                .startTime(savedEvent.getStartTime())
+                .endTime(savedEvent.getEndTime())
+                .maxVolunteers(savedEvent.getMaxVolunteers())
+                .thumbnailUrl(savedEvent.getThumbnailUrl())
+                .createdByName(creator.getName())
+                .adminApprovalStatus(savedEvent.getAdminApprovalStatus().toString())
+                .createdAt(savedEvent.getCreatedAt())
+                .build();
     }
 
     @Override
     @Transactional
-    public EventResponseDTO updateEvent(UUID eventId,
-                                       UpdateEventRequest request,
-                                       UUID updaterId) {
-
+    public EventResponseDTO updateEvent(UUID eventId, UpdateEventRequest request, UUID updaterId) {
+        // Validate event exists
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
-        User updater = userRepository.findById(updaterId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("User not found with id: " + updaterId));
+        // Validate updater exists
+        userRepository.findById(updaterId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + updaterId));
 
-        ensureEventManagerOrAdmin(event, updater);
+        // Check ownership - only creator can update
+        if (!event.getCreatedBy().getId().equals(updaterId)) {
+            throw new IllegalStateException("Only the event creator can update this event");
+        }
 
+        // Check if event has already started
         if (event.getStartTime().isBefore(LocalDateTime.now())) {
             throw new IllegalStateException("Cannot update event that has already started");
         }
 
-        if (request.getTitle() != null && !request.getTitle().isBlank())
+        // Update fields if provided
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
             event.setTitle(request.getTitle());
-        if (request.getDescription() != null)
+        }
+        if (request.getDescription() != null) {
             event.setDescription(request.getDescription());
-        if (request.getLocation() != null)
+        }
+        if (request.getLocation() != null) {
             event.setLocation(request.getLocation());
-        if (request.getStartTime() != null)
+        }
+        if (request.getStartTime() != null) {
             event.setStartTime(request.getStartTime());
-        if (request.getEndTime() != null)
+        }
+        if (request.getEndTime() != null) {
             event.setEndTime(request.getEndTime());
-        if (request.getMaxVolunteers() != null)
+        }
+        if (request.getMaxVolunteers() != null) {
             event.setMaxVolunteers(request.getMaxVolunteers());
+        }
+        if (request.getThumbnailUrl() != null) {
+            event.setThumbnailUrl(request.getThumbnailUrl());
+        }
 
-        if (!event.getStartTime().isBefore(event.getEndTime())) {
+        // Validate startTime < endTime after updates
+        if (event.getStartTime() != null && event.getEndTime() != null
+                && !event.getStartTime().isBefore(event.getEndTime())) {
             throw new IllegalArgumentException("Start time must be before end time");
         }
 
-        return mapToEventResponse(eventRepository.save(event));
-    }
+        Event savedEvent = eventRepository.save(event);
 
-    /* ============================================================
-     * FILTER / SEARCH
-     * ============================================================ */
+        return EventResponseDTO.builder()
+                .eventId(savedEvent.getId())
+                .title(savedEvent.getTitle())
+                .description(savedEvent.getDescription())
+                .location(savedEvent.getLocation())
+                .startTime(savedEvent.getStartTime())
+                .endTime(savedEvent.getEndTime())
+                .maxVolunteers(savedEvent.getMaxVolunteers())
+                .thumbnailUrl(savedEvent.getThumbnailUrl())
+                .createdByName(savedEvent.getCreatedBy().getName())
+                .adminApprovalStatus(savedEvent.getAdminApprovalStatus().toString())
+                .createdAt(savedEvent.getCreatedAt())
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Event> getEventsWithFilters(String searchQuery,
-                                            String category,
-                                            LocalDateTime fromDate,
-                                            LocalDateTime toDate,
-                                            EventApprovalStatus status) {
-        return eventRepository.findEventsWithFilters(
-                searchQuery, fromDate, toDate, status);
+    public List<Event> getEventsWithFilters(String searchQuery, String category,
+            LocalDateTime fromDate, LocalDateTime toDate,
+            EventApprovalStatus status) {
+        // Note: category parameter is reserved for future use when Event entity has a
+        // category field
+        return eventRepository.findEventsWithFilters(searchQuery, fromDate, toDate, status);
     }
-
-    /* ============================================================
-     * PARTICIPATION
-     * ============================================================ */
-
-        @Override
-        @Transactional(readOnly = true)
-        public List<ParticipantResponseDTO> getParticipants(UUID eventId) {
-        // Ensure event exists
-        Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
-
-        // Fetch all registrations for the event and map to DTO
-        List<Registration> regs = registrationRepository.findByEventId(eventId);
-
-        return regs.stream()
-            .map(r -> ParticipantResponseDTO.builder()
-                .userId(r.getVolunteer() != null ? r.getVolunteer().getId() : null)
-                .userName(r.getVolunteer() != null ? r.getVolunteer().getName() : null)
-                .email(r.getVolunteer() != null ? r.getVolunteer().getEmail() : null)
-                .registrationStatus(r.getRegistrationStatus() != null
-                    ? r.getRegistrationStatus().toString() : null)
-                .registeredAt(r.getCreatedAt())
-                .isCompleted(r.getRegistrationStatus() != null
-                    && r.getRegistrationStatus().equals(RegistrationStatus.COMPLETED))
-                .isWithdrawn(r.getRegistrationStatus() != null
-                    && r.getRegistrationStatus().equals(RegistrationStatus.WITHDRAWN))
-                .build())
-            .collect(Collectors.toList());
-        }
 
     @Override
     @Transactional
     public JoinEventResponse joinEvent(UUID eventId, UUID userId) {
-
+        // Validate event exists
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
+        // Check if event is approved
         if (!event.getAdminApprovalStatus().equals(EventApprovalStatus.APPROVED)) {
             throw new IllegalStateException("Cannot join event that is not approved");
         }
 
+        // Validate user exists
         User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
-        Optional<Registration> existing =
-                registrationRepository.findByEventIdAndVolunteerId(eventId, userId);
-
-        if (existing.isPresent()) {
-            Registration reg = existing.get();
-            if (reg.getRegistrationStatus().equals(RegistrationStatus.WITHDRAWN)) {
-                reg.setRegistrationStatus(RegistrationStatus.PENDING);
-                reg.setWithdrawnAt(null);
-                registrationRepository.save(reg);
+        // Check if already registered
+        Optional<Registration> existingRegistrationOpt = registrationRepository.findByEventIdAndVolunteerId(eventId,
+                userId);
+        if (existingRegistrationOpt.isPresent()) {
+            Registration existingRegistration = existingRegistrationOpt.get();
+            if (existingRegistration.getRegistrationStatus().equals(RegistrationStatus.WITHDRAWN)) {
+                // allow re-registration by resetting state to PENDING
+                existingRegistration.setRegistrationStatus(RegistrationStatus.PENDING);
+                existingRegistration.setWithdrawnAt(null);
+                Registration savedRegistration = registrationRepository.save(existingRegistration);
                 return JoinEventResponse.builder()
-                        .registrationId(reg.getId())
+                        .registrationId(savedRegistration.getId())
                         .eventId(event.getId())
                         .userId(user.getId())
                         .eventTitle(event.getTitle())
-                        .registrationStatus(reg.getRegistrationStatus().toString())
+                        .registrationStatus(savedRegistration.getRegistrationStatus().toString())
                         .message("Successfully re-registered for event. Awaiting approval.")
                         .build();
             }
             throw new IllegalStateException("User is already registered for this event");
         }
 
+        // Check if max volunteers reached
         if (event.getMaxVolunteers() != null && event.getMaxVolunteers() > 0) {
-            long approvedCount =
-                    registrationRepository.countByEventIdAndRegistrationStatus(
-                            eventId, RegistrationStatus.APPROVED);
+            long approvedCount = registrationRepository.countByEventIdAndRegistrationStatus(eventId,
+                    RegistrationStatus.APPROVED);
             if (approvedCount >= event.getMaxVolunteers()) {
                 throw new IllegalStateException("Event has reached maximum volunteer capacity");
             }
         }
 
+        // Create registration (PENDING by default)
         Registration registration = new Registration();
         registration.setEvent(event);
         registration.setVolunteer(user);
         registration.setRegistrationStatus(RegistrationStatus.PENDING);
 
-        Registration saved = registrationRepository.save(registration);
+        Registration savedRegistration = registrationRepository.save(registration);
 
         return JoinEventResponse.builder()
-                .registrationId(saved.getId())
+                .registrationId(savedRegistration.getId())
                 .eventId(event.getId())
                 .userId(user.getId())
                 .eventTitle(event.getTitle())
-                .registrationStatus(saved.getRegistrationStatus().toString())
+                .registrationStatus(savedRegistration.getRegistrationStatus().toString())
                 .message("Successfully registered for event. Awaiting approval.")
                 .build();
     }
@@ -320,31 +270,36 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public JoinEventResponse leaveEvent(UUID eventId, UUID userId) {
-
+        // Validate event exists
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
-        Registration registration =
-                registrationRepository.findByEventIdAndVolunteerId(eventId, userId)
-                        .orElseThrow(() ->
-                                new EntityNotFoundException("User is not registered for this event"));
+        // Validate user exists
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
+        // Find registration
+        Registration registration = registrationRepository.findByEventIdAndVolunteerId(eventId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("User is not registered for this event"));
+
+        // Check if already completed
         if (registration.getRegistrationStatus().equals(RegistrationStatus.COMPLETED)) {
-            throw new IllegalStateException("Cannot cancel completed registration");
+            throw new IllegalStateException("Cannot cancel registration for a completed event");
         }
 
+        // If already withdrawn, return a friendly idempotent message
         if (registration.getRegistrationStatus().equals(RegistrationStatus.WITHDRAWN)) {
             return JoinEventResponse.builder()
                     .registrationId(registration.getId())
                     .eventId(event.getId())
-                    .userId(userId)
+                    .userId(user.getId())
                     .eventTitle(event.getTitle())
                     .registrationStatus(registration.getRegistrationStatus().toString())
                     .message("User already withdrawn from event")
                     .build();
         }
 
+        // Mark registration as withdrawn instead of deleting it
         registration.setRegistrationStatus(RegistrationStatus.WITHDRAWN);
         registration.setWithdrawnAt(java.time.Instant.now());
         registrationRepository.save(registration);
@@ -352,53 +307,104 @@ public class EventServiceImpl implements EventService {
         return JoinEventResponse.builder()
                 .registrationId(registration.getId())
                 .eventId(event.getId())
-                .userId(userId)
+                .userId(user.getId())
                 .eventTitle(event.getTitle())
                 .registrationStatus(registration.getRegistrationStatus().toString())
                 .message("Successfully cancelled event registration.")
                 .build();
     }
 
-    /* ============================================================
-     * CHECK-IN & COMPLETION
-     * ============================================================ */
+    @Override
+    @Transactional(readOnly = true)
+    public EventResponseDTO getEventById(UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        String createdByName = null;
+        if (event.getCreatedBy() != null) {
+            // may trigger a lazy load
+            createdByName = event.getCreatedBy().getName();
+        }
+
+        return EventResponseDTO.builder()
+                .eventId(event.getId())
+                .title(event.getTitle())
+                .description(event.getDescription())
+                .location(event.getLocation())
+                .startTime(event.getStartTime())
+                .endTime(event.getEndTime())
+                .maxVolunteers(event.getMaxVolunteers())
+                .thumbnailUrl(event.getThumbnailUrl())
+                .createdByName(createdByName)
+                .adminApprovalStatus(
+                        event.getAdminApprovalStatus() == null ? null : event.getAdminApprovalStatus().toString())
+                .createdAt(event.getCreatedAt())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ParticipantResponseDTO> getParticipants(
+            UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
+
+        return event.getRegistrations().stream()
+                .map(reg -> ParticipantResponseDTO.builder()
+                        .userId(reg.getVolunteer().getId())
+                        .userName(reg.getVolunteer().getName())
+                        .email(reg.getVolunteer().getEmail())
+                        .registrationStatus(reg.getRegistrationStatus().toString())
+                        .registeredAt(reg.getCreatedAt())
+                        .isCompleted(reg.getRegistrationStatus().equals(RegistrationStatus.COMPLETED))
+                        .isWithdrawn(reg.getRegistrationStatus().equals(RegistrationStatus.WITHDRAWN))
+                        .build())
+                .collect(Collectors.toList());
+    }
 
     @Override
     @Transactional
-    public CheckInResponseDTO checkInVolunteer(UUID eventId, UUID userId, UUID checkerId) {
+    public CheckInResponseDTO checkInVolunteer(
+            UUID eventId, UUID userId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
-        User checker = userRepository.findById(checkerId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + checkerId));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
-        Registration registration =
-                registrationRepository.findByEventIdAndVolunteerId(eventId, userId)
-                        .orElseThrow(() ->
-                                new EntityNotFoundException("User is not registered"));
+        Registration registration = registrationRepository.findByEventIdAndVolunteerId(eventId, userId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "User is not registered for this event"));
 
-        ensureEventManagerOrAdmin(registration.getEvent(), checker);
-
+        // Check if registration is approved
         if (!registration.getRegistrationStatus().equals(RegistrationStatus.APPROVED)) {
-            throw new IllegalStateException("Only approved registrations can check-in");
+            throw new IllegalStateException(
+                    "Only approved registrations can check-in. Current status: "
+                            + registration.getRegistrationStatus());
         }
 
-        if (registration.getCheckedInAt() != null) {
+        // If already checked-in, return a friendly message
+        if (registration.getCheckedInAt() != null ||
+                registration.getRegistrationStatus().equals(RegistrationStatus.CHECKED_IN) ||
+                registration.getRegistrationStatus().equals(RegistrationStatus.COMPLETED)) {
             return CheckInResponseDTO.builder()
                     .registrationId(registration.getId().toString())
-                    .eventTitle(registration.getEvent().getTitle())
-                    .userName(registration.getVolunteer().getName())
+                    .eventTitle(event.getTitle())
+                    .userName(user.getName())
                     .isCheckedIn(true)
                     .message("User already checked in")
                     .build();
         }
 
+        // Mark as checked-in
         registration.setRegistrationStatus(RegistrationStatus.CHECKED_IN);
         registration.setCheckedInAt(java.time.Instant.now());
-        registrationRepository.save(registration);
+        Registration savedRegistration = registrationRepository.save(registration);
 
         return CheckInResponseDTO.builder()
-                .registrationId(registration.getId().toString())
-                .eventTitle(registration.getEvent().getTitle())
-                .userName(registration.getVolunteer().getName())
+                .registrationId(savedRegistration.getId().toString())
+                .eventTitle(event.getTitle())
+                .userName(user.getName())
                 .isCheckedIn(true)
                 .message("Check-in successful")
                 .build();
@@ -406,56 +412,46 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public RegistrationApprovalResponseDTO approveRegistration(UUID registrationId,
-                                                              UUID approvedByUserId) {
-
+    public RegistrationApprovalResponseDTO approveRegistration(UUID registrationId, UUID approvedByUserId) {
         Registration registration = registrationRepository.findById(registrationId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Registration not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Registration not found with id: " + registrationId));
 
         User approvedBy = userRepository.findById(approvedByUserId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + approvedByUserId));
 
-        ensureEventManagerOrAdmin(registration.getEvent(), approvedBy);
-
+        // Update registration status
         registration.setRegistrationStatus(RegistrationStatus.APPROVED);
         registration.setApprovedBy(approvedBy);
 
-        registrationRepository.save(registration);
+        Registration savedRegistration = registrationRepository.save(registration);
 
         return RegistrationApprovalResponseDTO.builder()
-                .registrationId(registration.getId().toString())
-                .userId(registration.getVolunteer().getId().toString())
-                .userName(registration.getVolunteer().getName())
-                .eventTitle(registration.getEvent().getTitle())
-                .registrationStatus(registration.getRegistrationStatus().toString())
+                .registrationId(savedRegistration.getId().toString())
+                .userId(savedRegistration.getVolunteer().getId().toString())
+                .userName(savedRegistration.getVolunteer().getName())
+                .eventTitle(savedRegistration.getEvent().getTitle())
+                .registrationStatus(savedRegistration.getRegistrationStatus().toString())
                 .message("Registration approved successfully")
                 .build();
     }
 
     @Override
     @Transactional
-    public RegistrationRejectionResponseDTO rejectRegistration(UUID registrationId, UUID actorId) {
-
+    public RegistrationRejectionResponseDTO rejectRegistration(UUID registrationId) {
         Registration registration = registrationRepository.findById(registrationId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Registration not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Registration not found with id: " + registrationId));
 
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        ensureEventManagerOrAdmin(registration.getEvent(), actor);
-
+        // Update registration status
         registration.setRegistrationStatus(RegistrationStatus.REJECTED);
-        registrationRepository.save(registration);
+
+        Registration savedRegistration = registrationRepository.save(registration);
 
         return RegistrationRejectionResponseDTO.builder()
-                .registrationId(registration.getId().toString())
-                .userId(registration.getVolunteer().getId().toString())
-                .userName(registration.getVolunteer().getName())
-                .eventTitle(registration.getEvent().getTitle())
-                .registrationStatus(registration.getRegistrationStatus().toString())
+                .registrationId(savedRegistration.getId().toString())
+                .userId(savedRegistration.getVolunteer().getId().toString())
+                .userName(savedRegistration.getVolunteer().getName())
+                .eventTitle(savedRegistration.getEvent().getTitle())
+                .registrationStatus(savedRegistration.getRegistrationStatus().toString())
                 .message("Registration rejected successfully")
                 .build();
     }
@@ -463,23 +459,19 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public RegistrationCompletionResponseDTO completeRegistration(UUID registrationId,
-                                                                  RegistrationCompletionRequest request,
-                                                                  UUID actorId) {
-
+            RegistrationCompletionRequest request) {
         Registration registration = registrationRepository.findById(registrationId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Registration not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Registration not found with id: " + registrationId));
 
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        ensureEventManagerOrAdmin(registration.getEvent(), actor);
-
-        if (!registration.getRegistrationStatus().equals(RegistrationStatus.CHECKED_IN)
-                && !registration.getRegistrationStatus().equals(RegistrationStatus.COMPLETED)) {
-            throw new IllegalStateException("Only checked-in registrations can be completed");
+        // Check if registration is checked-in (user must check-in before completion)
+        if (!registration.getRegistrationStatus().equals(RegistrationStatus.CHECKED_IN) &&
+                !registration.getRegistrationStatus().equals(RegistrationStatus.COMPLETED)) {
+            throw new IllegalStateException(
+                    "Only checked-in registrations can be completed. Current status: "
+                            + registration.getRegistrationStatus());
         }
 
+        // Check if already completed
         if (registration.getRegistrationStatus().equals(RegistrationStatus.COMPLETED)) {
             return RegistrationCompletionResponseDTO.builder()
                     .registrationId(registration.getId().toString())
@@ -492,108 +484,38 @@ public class EventServiceImpl implements EventService {
                     .build();
         }
 
+        // Mark as completed
         registration.setRegistrationStatus(RegistrationStatus.COMPLETED);
         registration.setCompletedAt(java.time.Instant.now());
-        registration.setCompletionNotes(request.getCompletionNotes());
+        if (request.getCompletionNotes() != null && !request.getCompletionNotes().isEmpty()) {
+            registration.setCompletionNotes(request.getCompletionNotes());
+        }
 
-        registrationRepository.save(registration);
+        Registration savedRegistration = registrationRepository.save(registration);
 
         return RegistrationCompletionResponseDTO.builder()
-                .registrationId(registration.getId().toString())
-                .userId(registration.getVolunteer().getId().toString())
-                .userName(registration.getVolunteer().getName())
-                .eventTitle(registration.getEvent().getTitle())
+                .registrationId(savedRegistration.getId().toString())
+                .userId(savedRegistration.getVolunteer().getId().toString())
+                .userName(savedRegistration.getVolunteer().getName())
+                .eventTitle(savedRegistration.getEvent().getTitle())
                 .isCompleted(true)
-                .completionNotes(registration.getCompletionNotes())
+                .completionNotes(savedRegistration.getCompletionNotes())
                 .message("Registration marked as completed successfully")
                 .build();
     }
 
-    /* ============================================================
-     * HELPER
-     * ============================================================ */
-
-    private EventResponseDTO mapToEventResponse(Event event) {
-        return EventResponseDTO.builder()
-                .eventId(event.getId())
-                .title(event.getTitle())
-                .description(event.getDescription())
-                .location(event.getLocation())
-                .startTime(event.getStartTime())
-                .endTime(event.getEndTime())
-                .maxVolunteers(event.getMaxVolunteers())
-                .createdByName(
-                        event.getCreatedBy() != null ? event.getCreatedBy().getName() : null)
-                .adminApprovalStatus(
-                        event.getAdminApprovalStatus() != null
-                                ? event.getAdminApprovalStatus().toString()
-                                : null)
-                .createdAt(event.getCreatedAt())
-                .build();
-    }
-
-    private boolean hasRole(User user, String roleName) {
-        if (user == null || user.getRoles() == null) return false;
-        return user.getRoles().stream()
-                .anyMatch(r -> r != null && roleName.equalsIgnoreCase(r.getRoleName()));
-    }
-
-    private boolean isManagerOrAdmin(User user) {
-        return hasRole(user, UserRoleType.MANAGER.name()) || hasRole(user, UserRoleType.ADMIN.name());
-    }
-
-    private void ensureEventManagerOrAdmin(Event event, User actor) {
-        boolean isCreator = event.getCreatedBy() != null
-                && actor != null
-                && event.getCreatedBy().getId().equals(actor.getId());
-        boolean isAdmin = hasRole(actor, UserRoleType.ADMIN.name());
-        boolean isManager = hasRole(actor, UserRoleType.MANAGER.name());
-        if (!(isAdmin || (isManager && isCreator))) {
-            throw new IllegalStateException("Not authorized to manage this event");
-        }
-    }
-
-    private void notifyAdminsPendingEvent(Event event, User creator) {
-        // Fetch active admins
-        List<User> admins = userRepository.findByIsActive(true).stream()
-                .filter(this::isAdmin)
-                .toList();
-        if (admins.isEmpty()) {
-            return;
-        }
-
-        String title = "Sự kiện mới chờ duyệt";
-        String body = String.format("Sự kiện \"%s\" do %s vừa tạo đang chờ duyệt.",
-                event.getTitle(),
-                creator != null ? creator.getName() : "manager");
-
-        List<Notification> notifications = new ArrayList<>();
-        for (User admin : admins) {
-            Notification n = new Notification();
-            n.setRecipient(admin);
-            n.setEvent(event);
-            n.setTitle(title);
-            n.setBody(body);
-            n.setNotificationType(NotificationType.EVENT_CREATED_PENDING);
-            n.setIsRead(false);
-            notifications.add(n);
-        }
-        notificationRepository.saveAll(notifications);
-    }
-
-    private boolean isAdmin(User user) {
-        return hasRole(user, UserRoleType.ADMIN.name());
+    @Override
+    @Transactional(readOnly = true)
+    public long countRegisteredEvents(UUID volunteerId) {
+        List<RegistrationStatus> eligibleStatuses = List.of(
+                RegistrationStatus.APPROVED,
+                RegistrationStatus.CHECKED_IN,
+                RegistrationStatus.COMPLETED);
+        return registrationRepository.countByVolunteerIdAndRegistrationStatusIn(volunteerId, eligibleStatuses);
     }
 
     @Override
-    public long countUpcomingEvents() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime oneMonthLater = now.plusMonths(1);
-        
-        return eventRepository.countUpcomingEvents(
-            EventApprovalStatus.APPROVED,
-            now,
-            oneMonthLater
-        );
+    public List<Event> getPendingEvents() {
+        return eventRepository.findAllByAdminApprovalStatusAndIsArchived(EventApprovalStatus.PENDING, false);
     }
 }

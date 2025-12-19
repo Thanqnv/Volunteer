@@ -33,10 +33,12 @@ build/
 .vscode/
 .mvn/
 
-# Ignore local application config files that may contain secrets
-src/main/resources/application-dev.properties
-src/main/resources/application-prod.properties
-src/main/resources/*.local.yml
-src/main/resources/*.local.properties
-
-volunteer_hub_backend/uploads
+### Environment & Secrets ###
+.env
+.env.local
+.env.*.local
+*.env
+application-local.properties
+application-secrets.properties
+.idea/
+.vscode/

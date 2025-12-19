@@ -1,10 +1,9 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.config;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -15,12 +14,12 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.model.utils.JwtUtil;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * JWT Authentication Filter.
@@ -112,20 +111,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * Không filter các public endpoints (optional optimization).
+     * NOTE: We should NOT skip JWT validation for endpoints that may need
+     * authentication info even if they're publicly accessible.
+     * The SecurityConfig already handles authorization - this filter should
+     * still run to extract user info from valid tokens.
      */
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getServletPath();
-        // Skip JWT validation for public endpoints
+        // Skip JWT validation only for truly public endpoints that never need user info
         return path.startsWith("/api/auth/") ||
                 path.startsWith("/api/dashboard/") ||
-                path.startsWith("/api/events/") ||
-                path.startsWith("/api/registrations/") ||
-                path.startsWith("/api/posts") ||
-                path.startsWith("/api/comments/") ||
-                path.startsWith("/api/users/") ||
-                path.startsWith("/api/search/autocomplete/") ||
-                path.startsWith("/api/notifications/") ||
                 path.startsWith("/ui/") ||
                 path.startsWith("/oauth2/") ||
                 path.startsWith("/login/oauth2/");

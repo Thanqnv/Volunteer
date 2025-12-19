@@ -18,15 +18,32 @@ export const useEvents = (initialPage = 1, limit = 9) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Normalize event data from various API formats
+    const normalizeEvent = useCallback((event: any = {}) => ({
+        ...event,
+        event_id: event.event_id || event.eventId || event.id,
+        title: event.title || "Sự kiện",
+        description: event.description || "",
+        location: event.location || "Chưa cập nhật",
+        start_time: event.start_time || event.startTime || "",
+        end_time: event.end_time || event.endTime || "",
+        registration_deadline: event.registration_deadline || event.registrationDeadline || event.end_time || event.endTime || "",
+        current_volunteers: event.current_volunteers ?? event.currentVolunteers ?? event.registrationCount ?? 0,
+        max_volunteers: event.max_volunteers ?? event.maxVolunteers ?? 0,
+        category: event.category || "Tình nguyện",
+        image: event.image || event.thumbnailUrl || "",
+    }), []);
+
     // Fetch Events
     const fetchEvents = useCallback(async (page) => {
         setIsLoading(true);
         setError(null);
         try {
             const response = await eventService.getAllEvents();
-            const events = response.data["data"] || [];
+            const rawEvents = response.data["data"] || [];
+            const events = rawEvents.map(normalizeEvent);
             
-            console.log("Fetched events:", events);
+            console.log("Fetched and normalized events:", events);
 
             if (events.length > 0) {
                 setAllEvents(events);
@@ -40,7 +57,7 @@ export const useEvents = (initialPage = 1, limit = 9) => {
         } finally {
             setIsLoading(false);
         }
-    }, [limit]);
+    }, [limit, normalizeEvent]);
 
     // Initial Fetch & Mock Setup
     useEffect(() => {

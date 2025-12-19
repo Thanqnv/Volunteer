@@ -18,7 +18,8 @@ export const userService = {
    * @param {string} userId
    */
   getUserById: async (userId) => {
-    const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
+    // Backend endpoint /api/users returns current authenticated user's profile
+    const response = await axios.get(`${API_BASE_URL}/api/users`, {
       headers: getAuthHeader(),
     });
     return response.data;

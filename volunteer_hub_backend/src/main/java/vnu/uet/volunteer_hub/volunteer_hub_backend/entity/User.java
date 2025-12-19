@@ -27,12 +27,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.UserRoleType;
 
 /**
  * Entity đại diện cho người dùng hệ thống
@@ -56,21 +53,21 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Comment("Mật khẩu đã mã hóa (BCrypt)")
+    @Comment("Mật khẩu đã mã hóa (BCrypt) - NULL cho OAuth2 users")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @Column(name = "password", columnDefinition = "TEXT", nullable = false)
+    @Column(name = "password", columnDefinition = "TEXT", nullable = true)
     private String password;
 
     @Comment("Trạng thái kích hoạt tài khoản (true = active, false = locked)")
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = Boolean.TRUE;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "account_type", length = 20, nullable = false, columnDefinition = "varchar(20) default 'VOLUNTEER'")
-    private UserRoleType accountType = UserRoleType.VOLUNTEER;
+    @Comment("URL ảnh đại diện (avatar) của user")
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    private String avatarUrl;
 
     @JsonIgnore
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.MERGE })
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
@@ -102,9 +99,6 @@ public class User extends BaseEntity implements UserDetails {
     public void prePersist() {
         if (isActive == null) {
             isActive = Boolean.TRUE;
-        }
-        if (accountType == null) {
-            accountType = UserRoleType.VOLUNTEER;
         }
     }
 

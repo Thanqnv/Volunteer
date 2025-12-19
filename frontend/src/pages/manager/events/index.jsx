@@ -206,7 +206,7 @@ function ManagerEventCard({ event, index, type, onDelete, itemVariants }) {
             </div>
             <div className="flex items-center text-sm text-gray-500">
               <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-              <span className="truncate">{event.location}</span>
+              <span className="truncate">{typeof event.location === 'string' ? event.location : event.location?.name || 'N/A'}</span>
             </div>
           </div>
         </div>

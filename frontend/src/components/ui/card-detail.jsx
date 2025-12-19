@@ -40,13 +40,13 @@ const EventCard = ({ event, onRegister, onCancel, onClick }) => {
     const handleRegister = (e) => {
         e.stopPropagation() // Stop bubbling to card
         setApplied(true)
-        onRegister && onRegister(event?.event_id)
+        onRegister && onRegister(event?.event_id || event?.eventId || event?.id)
     }
 
     const handleCancel = (e) => {
         e.stopPropagation() // Stop bubbling to card
         setApplied(false)
-        onCancel && onCancel(event?.event_id)
+        onCancel && onCancel(event?.event_id || event?.eventId || event?.id)
     }
 
     const handleCardClick = () => {

@@ -18,171 +18,123 @@ import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.BaseEntity;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Role;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.Registration;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.entity.User;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.UserRoleType;
+import vnu.uet.volunteer_hub.volunteer_hub_backend.model.enums.RegistrationStatus;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RegistrationRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.RoleRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.repository.UserRepository;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.service.UserService;
 
-/**
- * UserServiceImpl
- * <p>
- * Xử lý toàn bộ nghiệp vụ liên quan đến người dùng:
- * đăng ký, quản lý hồ sơ, đổi mật khẩu, khoá/mở khoá tài khoản
- * và truy xuất danh sách sự kiện đã tham gia.
- * </p>
- */
 @Service
 public class UserServiceImpl implements UserService {
-
-    private static final Logger logger =
-            LoggerFactory.getLogger(UserServiceImpl.class);
-
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     private final UserRepository userRepository;
+
     private final RoleRepository roleRepository;
+
     private final PasswordEncoder passwordEncoder;
+
     private final RegistrationRepository registrationRepository;
 
-    public UserServiceImpl(UserRepository userRepository,
-                           RoleRepository roleRepository,
-                           PasswordEncoder passwordEncoder,
-                           RegistrationRepository registrationRepository) {
+    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder, RegistrationRepository registrationRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.registrationRepository = registrationRepository;
     }
 
-    /* ============================================================
-     * AUTH / REGISTRATION
-     * ============================================================ */
-
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void registerUser(RegistrationRequest registrationRequest) {
-
         if (userRepository.existsByEmailIgnoreCase(registrationRequest.getEmail())) {
             throw new IllegalArgumentException("Email already exists!");
         }
-
-        if (!registrationRequest.getPassword()
-                .equals(registrationRequest.getConfirmPassword())) {
-            throw new IllegalArgumentException("Mật khẩu xác nhận không khớp!");
+        if (!registrationRequest.getPassword().equals(registrationRequest.getConfirmPassword())) {
+            throw new IllegalArgumentException("Mật khẩu và xác nhận mật khẩu không khớp!");
         }
-
-        if (registrationRequest.getName() == null
-                || registrationRequest.getName().isBlank()) {
+        if (registrationRequest.getName() == null || registrationRequest.getName().isBlank()) {
             throw new IllegalArgumentException("Họ tên không được để trống!");
         }
-
-        UserRoleType requestedRole =
-                UserRoleType.fromString(
-                        registrationRequest.getRole() == null
-                                ? UserRoleType.VOLUNTEER.name()
-                                : registrationRequest.getRole());
-
-        if (requestedRole == null) {
-            throw new IllegalArgumentException("Vai trò không hợp lệ");
-        }
-
-        if (requestedRole == UserRoleType.ADMIN) {
-            throw new IllegalArgumentException(
-                    "Không được tự đăng ký vai trò ADMIN");
-        }
-
         User user = new User();
         user.setEmail(registrationRequest.getEmail().toLowerCase());
-        user.setName(registrationRequest.getName().trim());
-        user.setPassword(passwordEncoder.encode(
-                registrationRequest.getPassword()));
-        user.setAccountType(requestedRole);
+        user.setName(registrationRequest.getName());
+        user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
 
-        String roleName =
-                requestedRole == UserRoleType.MANAGER
-                        ? "MANAGER"
-                        : "VOLUNTEER";
+        Role userRole = roleRepository.findByRoleName("VOLUNTEER")
+                .orElseThrow(() -> new RuntimeException("VOLUNTEER role not found in the database"));
+        user.getRoles().add(userRole);
 
-        Role role = roleRepository.findByRoleName(roleName)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                roleName + " role not found"));
-
-        user.getRoles().add(role);
-
-        logger.info("Saving new user: {}", user.getEmail());
+        logger.info("Attempting to save user: {}", user.getEmail());
         userRepository.save(user);
+        logger.info("User saved successfully: {}", user.getEmail());
     }
 
     @Override
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmailIgnoreCase(email);
+
     }
 
     @Override
     public User findByEmail(String email) {
-        return userRepository
-                .findByEmailIgnoreCaseWithRoleOptional(email)
-                .orElse(null);
+        return userRepository.findByEmailIgnoreCaseWithRoleOptional(email).orElse(null);
     }
-
-    /* ============================================================
-     * PASSWORD / ACCOUNT STATUS
-     * ============================================================ */
 
     @Override
     public void updatePassword(String email, String newPassword) {
+        try {
+            logger.debug("Attempting to update password for email: {}", email);
 
-        User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found with email: " + email));
+            User user = userRepository.findByEmailIgnoreCase(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+            String encodedPassword = passwordEncoder.encode(newPassword);
+            logger.debug("Encoded new password for user: {}", user.getEmail());
+
+            user.setPassword(encodedPassword);
+            userRepository.save(user);
+
+            logger.info("Password updated successfully for user: {}", email);
+        } catch (Exception e) {
+            logger.error("Error updating password for email {}: {}", email, e.getMessage(), e);
+            throw e; // Re-throw để rollback transaction
+        }
     }
 
     @Override
     public void lockUserById(UUID id) {
-        User user = findUserById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found"));
         user.setIsActive(Boolean.FALSE);
         userRepository.save(user);
     }
 
     @Override
     public void unlockUserById(UUID id) {
-        User user = findUserById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found"));
         user.setIsActive(Boolean.TRUE);
         userRepository.save(user);
     }
 
-    /* ============================================================
-     * AUTH CONTEXT
-     * ============================================================ */
-
     @Override
     public UUID getViewerIdFromAuthentication(Authentication auth) {
-
         if (auth == null || !auth.isAuthenticated()) {
             return null;
         }
 
         Object principal = auth.getPrincipal();
-        if (principal instanceof UUID uuid) {
-            return uuid;
+        if (principal instanceof UUID) {
+            return (UUID) principal;
         }
 
         if (auth.getName() == null) {
             return null;
         }
-
-        return userRepository
-                .findByEmailIgnoreCase(auth.getName())
+        return userRepository.findByEmailIgnoreCase(auth.getName())
                 .map(BaseEntity::getId)
                 .orElse(null);
     }
-
-    /* ============================================================
-     * PROFILE
-     * ============================================================ */
 
     @Override
     public User findUserById(UUID userId) {
@@ -190,32 +142,35 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("UserId cannot be null");
         }
         return userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found with id: " + userId));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
     }
 
     @Override
-    public User updateUserProfile(UUID userId,
-                                  String name,
-                                  String email) {
-
+    public User updateUserProfile(UUID userId, String name, String email) {
         User user = findUserById(userId);
 
+        // Cập nhật name nếu có
         if (name != null && !name.isBlank()) {
             user.setName(name);
         }
 
+        // Cập nhật email nếu có
         if (email != null && !email.isBlank()) {
             email = email.toLowerCase();
-            if (!user.getEmail().equalsIgnoreCase(email)
-                    && userRepository.existsByEmailIgnoreCase(email)) {
+            // Kiểm tra email đã tồn tại chưa (ngoại trừ user hiện tại)
+            if (!user.getEmail().equalsIgnoreCase(email) && userRepository.existsByEmailIgnoreCase(email)) {
                 throw new IllegalArgumentException("Email already exists!");
             }
             user.setEmail(email);
         }
 
         return userRepository.save(user);
+    }
+
+    public void updateUserAvatar(UUID userId, String avatarUrl) {
+        User user = findUserById(userId);
+        user.setAvatarUrl(avatarUrl);
+        userRepository.save(user);
     }
 
     @Override
@@ -225,6 +180,7 @@ public class UserServiceImpl implements UserService {
                 .userId(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
                 .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
@@ -232,63 +188,47 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserProfileResponse updateUserProfile(UUID userId,
-                                                 UpdateProfileRequest request) {
-
-        User updated =
-                updateUserProfile(
-                        userId,
-                        request.getName(),
-                        request.getEmail());
-
+    public UserProfileResponse updateUserProfile(UUID userId, UpdateProfileRequest request) {
+        User updated = this.updateUserProfile(userId, request.getName(), request.getEmail());
+        if (request.getAvatarUrl() != null) {
+            updated.setAvatarUrl(request.getAvatarUrl());
+            updated = userRepository.save(updated);
+        }
         return UserProfileResponse.builder()
                 .userId(updated.getId())
                 .name(updated.getName())
                 .email(updated.getEmail())
+                .avatarUrl(updated.getAvatarUrl())
                 .isActive(updated.getIsActive())
                 .createdAt(updated.getCreatedAt())
                 .updatedAt(updated.getUpdatedAt())
                 .build();
     }
 
-    /* ============================================================
-     * USER EVENTS
-     * ============================================================ */
-
     @Override
     public List<EventResponseDTO> getUserEvents(UUID userId) {
 
         findUserById(userId);
-
-        List<Registration> registrations =
-                registrationRepository.findByVolunteerId(userId);
-
-        return registrations.stream()
-                .map(registration -> {
-                    var event = registration.getEvent();
-                    return EventResponseDTO.builder()
-                            .eventId(event.getId())
-                            .title(event.getTitle())
-                            .description(event.getDescription())
-                            .location(event.getLocation())
-                            .startTime(event.getStartTime())
-                            .endTime(event.getEndTime())
-                            .maxVolunteers(event.getMaxVolunteers())
-                            .createdByName(
-                                    event.getCreatedBy() == null
-                                            ? null
-                                            : event.getCreatedBy().getName())
-                            .registrationStatus(
-                                    registration.getRegistrationStatus().toString())
-                            .registeredAt(registration.getCreatedAt())
-                            .isCompleted(registration.getIsCompleted())
-                            .completionNotes(
-                                    registration.getCompletionNotes())
-                            .adminApprovalStatus(
-                                    event.getAdminApprovalStatus().toString())
-                            .createdAt(event.getCreatedAt())
-                            .build();
-                })
-                .collect(Collectors.toList());
+        List<Registration> registrations = registrationRepository.findByVolunteerId(userId);
+        return registrations.stream().map(registration -> {
+            var event = registration.getEvent();
+            return EventResponseDTO.builder()
+                    .eventId(event.getId())
+                    .title(event.getTitle())
+                    .description(event.getDescription())
+                    .location(event.getLocation())
+                    .startTime(event.getStartTime())
+                    .endTime(event.getEndTime())
+                    .maxVolunteers(event.getMaxVolunteers())
+                    .thumbnailUrl(event.getThumbnailUrl())
+                    .createdByName(event.getCreatedBy() == null ? null : event.getCreatedBy().getName())
+                    .registrationStatus(registration.getRegistrationStatus().toString())
+                    .registeredAt(registration.getCreatedAt())
+                    .isCompleted(registration.getRegistrationStatus() == RegistrationStatus.COMPLETED)
+                    .completionNotes(registration.getCompletionNotes())
+                    .adminApprovalStatus(event.getAdminApprovalStatus().toString())
+                    .createdAt(event.getCreatedAt())
+                    .build();
+        }).collect(Collectors.toList());
     }
 }

@@ -2,10 +2,10 @@
     "groups": [],
     "properties": [
         {
-            "name": "password-reset.token.ttl-minutes",
+            "name": "recovery.code.ttl-minutes",
             "type": "java.lang.Long",
-            "description": "TTL (in minutes) for password reset tokens. Default: 15",
-            "sourceType": "application.properties"
+            "description": "TTL (in minutes) for recovery codes stored in Redis. Default: 10",
+            "sourceType": "vnu.uet.volunteer_hub.volunteer_hub_backend.service.RecoveryCodeService"
         },
         {
             "name": "jwt.secret",

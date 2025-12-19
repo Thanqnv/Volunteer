@@ -121,8 +121,7 @@ public class DashboardServiceImpl implements DashboardService {
                     // Get completed registrations
                     List<Registration> completedRegs = registrationRepository.findAll().stream()
                             .filter(r -> r.getVolunteer().getId().equals(user.getId())
-                                    && r.getIsCompleted()
-                                    && r.getRegistrationStatus() == RegistrationStatus.APPROVED)
+                                    && r.getRegistrationStatus() == RegistrationStatus.COMPLETED)
                             .toList();
 
                     // Calculate volunteer hours (sum of event durations)
@@ -231,7 +230,6 @@ public class DashboardServiceImpl implements DashboardService {
                 .location(event.getLocation())
                 .startTime(event.getStartTime())
                 .createdAt(event.getCreatedAt())
-                .registrationDeadline(event.getRegistrationDeadline())
                 .creatorName(event.getCreatedBy() == null ? "" : event.getCreatedBy().getName())
                 .registrationCount(registrationCount)
                 .postCount(postCount)

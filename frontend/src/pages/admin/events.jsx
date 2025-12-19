@@ -72,7 +72,7 @@ export default function EventShowcase() {
     try {
       // const res = await fetch(`${baseUrl}/api/dashboard`);
       const res = await axios.get(`${baseUrl}/api/dashboard`);
-      const json = await res.json();
+      const json = res.data;
       const list = json?.data?.trendingEvents || json?.trendingEvents || [];
       setFeaturedEvents(list.map(normalizeEvent));
     } catch (err) {
@@ -87,7 +87,7 @@ export default function EventShowcase() {
     try {
       // const res = await fetch(`${baseUrl}/api/admin/events`);
       const res = await axios.get(`${baseUrl}/api/admin/events`);
-      const json = await res.json();
+      const json = res.data;
       const list = json?.data || json?.events || [];
       setAllEvents(list.map(normalizeEvent));
     } catch (err) {
@@ -129,8 +129,8 @@ export default function EventShowcase() {
   );
 
   const handleRegister = async (id) => {
-    // await fetch(`${baseUrl}/api/events/${id}/register`, { method: "POST" });
-    await axios.post(`${baseUrl}/api/events/${id}/register`);
+    // await fetch(`${baseUrl}/api/events/${id}/participants`, { method: "POST" });
+    await axios.post(`${baseUrl}/api/events/${id}/participants`);
     getAllEvents();
   };
 

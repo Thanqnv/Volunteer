@@ -1,5 +1,7 @@
 package vnu.uet.volunteer_hub.volunteer_hub_backend.config;
 
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,17 +13,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import vnu.uet.volunteer_hub.volunteer_hub_backend.service.impl.CustomOAuth2UserService;
 
 @Configuration
 @EnableWebSecurity
@@ -31,35 +29,54 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final ClientRegistrationRepository clientRegistrationRepository;
 
-    // Frontend URL (comma-separated)
+    // Allow frontend URL to be configured via property. Default to Next.js dev
+    // server.
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
     @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
-                // Disable CSRF for stateless REST API
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // Enable CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // Stateless session (JWT)
+                // Security Headers
+                .headers(headers -> headers
+                        // X-Frame-Options: chống clickjacking
+                        .frameOptions(frame -> frame.sameOrigin())
+                        // X-Content-Type-Options: chống MIME sniffing
+                        .contentTypeOptions(content -> {
+                        })
+                        // X-XSS-Protection: chống XSS (legacy browsers)
+                        .xssProtection(xss -> xss.headerValue(
+                                org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                        // Referrer-Policy
+                        .referrerPolicy(referrer -> referrer.policy(
+                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        // Content-Security-Policy
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
+                                        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+                                        +
+                                        "font-src 'self' https://fonts.gstatic.com; " +
+                                        "img-src 'self' data: https:; " +
+                                        "connect-src 'self' " + frontendUrl + ";")))
+                // Stateless session - không lưu session trên server
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // Authorization rules
                 .authorizeHttpRequests(authz -> authz
+                        // Public endpoints - không cần authentication
                         .requestMatchers(
                                 "/ui/**",
                                 "/api/auth/**",
@@ -75,34 +92,26 @@ public class SecurityConfig {
                                 "/api/search/autocomplete/**",
                                 "/api/users/profile/**",
                                 "/api/notifications/**",
+                                "/api/upload/**",
                                 "/oauth2/**",
-                                "/login/oauth2/**",
-                                "/error")
+                                "/login/oauth2/**")
                         .permitAll()
-
-                        // Allow anonymous GET posts
+                        // GET /api/posts - cho phép anonymous nhưng có thêm info nếu
+                        // authenticated
                         .requestMatchers(HttpMethod.GET, "/api/posts")
                         .permitAll()
-
-                        // Allow check-in without auth (test / kiosk mode)
-                        .requestMatchers(HttpMethod.POST, "/api/events/*/check-in/*")
-                        .permitAll()
-
-                        // Admin endpoints (TODO: restrict by role later)
-                        .requestMatchers("/api/admin/**")
-                        .permitAll()
-
-                        // All other requests require authentication
-                        .anyRequest()
-                        .authenticated())
-
-                // Exception handling
+                        // Allow check-in endpoint for events without authentication
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/check-in").permitAll()
+                        // Admin endpoints - yêu cầu role ADMIN
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Tất cả các request khác cần authenticated (bao gồm POST /api/posts)
+                        .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.getWriter().write(
-                                    "{\"data\":null,\"message\":\"Unauthorized\",\"detail\":\"Authentication required. Please provide a valid JWT token.\"}");
+                                    "{\"data\":null,\"message\":\"Unauthorized\",\"detail\":\"Authentication required. Please provide a valid JWT token in the Authorization header.\"}");
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setContentType("application/json");
@@ -110,26 +119,10 @@ public class SecurityConfig {
                             response.getWriter().write(
                                     "{\"data\":null,\"message\":\"Forbidden\",\"detail\":\"You don't have permission to access this resource.\"}");
                         }))
-
-                // OAuth2 Login (Google)
-                .oauth2Login(oauth2 -> {
-                    OAuth2AuthorizationRequestResolver resolver =
-                            new CustomAuthorizationRequestResolver(
-                                    clientRegistrationRepository,
-                                    "/oauth2/authorization");
-
-                    oauth2
-                            .authorizationEndpoint(endpoint ->
-                                    endpoint.authorizationRequestResolver(resolver))
-                            .userInfoEndpoint(userInfo ->
-                                    userInfo.userService(customOAuth2UserService))
-                            .successHandler(oAuth2AuthenticationSuccessHandler);
-                });
-
-        // JWT filter
-        http.addFilterBefore(
-                jwtAuthenticationFilter,
-                UsernamePasswordAuthenticationFilter.class);
+                // Thêm JWT filter chỉ cho những endpoint cần authentication
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2AuthenticationSuccessHandler));
 
         return http.build();
     }
@@ -137,28 +130,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
+        // frontendUrl may be a comma-separated list, e.g.
+        // http://localhost:3000,https://example.com
         var origins = java.util.Arrays.stream(frontendUrl.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
-
         configuration.setAllowedOrigins(origins);
-        configuration.setAllowedMethods(
-                java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(
-                java.util.List.of(
-                        "Authorization",
-                        "Content-Type",
-                        "Accept",
-                        "Origin",
+                java.util.List.of("Authorization", "Content-Type", "Accept", "Origin",
                         "X-Requested-With"));
-        configuration.setExposedHeaders(
-                java.util.List.of("Authorization"));
         configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+        configuration.setExposedHeaders(java.util.List.of("Authorization"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

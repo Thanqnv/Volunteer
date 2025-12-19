@@ -72,7 +72,7 @@ export const EventCard = ({ event }) => {
                         </div>
                         <div className="flex items-center gap-1.5">
                             <MapPin className="w-4 h-4 text-zinc-400" />
-                            {event.location}
+                            {typeof event.location === 'string' ? event.location : event.location?.name || 'N/A'}
                         </div>
                     </div>
 

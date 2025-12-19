@@ -7,9 +7,11 @@ import axios from 'axios';
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
-const getAuthHeader = () => ({
-  Authorization: `Bearer ${localStorage.getItem("token")}`,
-});
+const getAuthHeader = () => {
+  const token = localStorage.getItem("token");
+  console.log('[EventService] Token from localStorage:', token ? 'exists' : 'missing');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 export const eventService = {
   /* USER */
@@ -21,14 +23,18 @@ export const eventService = {
 
   getEventDetails: async (eventId) => {
     const res = await axios.get(`${API_BASE_URL}/api/events/${eventId}`);
-    return res.data;
+    // API returns {data: {...}, message, detail} - extract actual event data
+    return res.data?.data || res.data;
   },
 
   registerEvent: async (eventId) => {
     const res = await axios.post(
-      `${API_BASE_URL}/api/events/${eventId}/register`,
+      `${API_BASE_URL}/api/events/${eventId}/participants`,
       {},
-      { headers: getAuthHeader() }
+      { 
+        headers: getAuthHeader(),
+        withCredentials: true
+      }
     );
     return res.data;
   },
@@ -97,6 +103,15 @@ export const eventService = {
 
   getUpcomingEventsCount: async () => {
     const res = await axios.get(`${API_BASE_URL}/api/events/upcoming-count`);
+    const data = res.data?.data;
+    // Backend returns { data: [...], message: "...", detail: null }
+    // So we need to get array length
+    return Array.isArray(data) ? data.length : 0;
+  },
+
+  getRegisteredEventsCount: async () => {
+    const res = await axios.get(`${API_BASE_URL}/api/events/registered-events-count`);
+    // Backend returns { data: number, message: "...", detail: null }
     return res.data?.data || 0;
   },
 };

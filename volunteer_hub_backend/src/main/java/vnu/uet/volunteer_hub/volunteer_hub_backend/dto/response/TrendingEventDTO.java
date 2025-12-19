@@ -17,7 +17,6 @@ public class TrendingEventDTO {
     private String location;
     private LocalDateTime startTime;
     private LocalDateTime createdAt;
-    private LocalDateTime registrationDeadline;
     private String creatorName;
     private int registrationCount;
     private int postCount;

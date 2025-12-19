@@ -14,21 +14,24 @@ const FeaturedSlider = ({ events, onRegister, onCancel, onClick }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                {events.map((event, index) => (
-                    <motion.div
-                        key={event.event_id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.1 }}
-                    >
-                        <EventCard
-                            event={event}
-                            onRegister={onRegister}
-                            onCancel={onCancel}
-                            onClick={() => onClick(event.event_id)}
-                        />
-                    </motion.div>
-                ))}
+                {events.map((event, idx) => {
+                    const eventId = event.event_id || event.eventId || event.id;
+                    return (
+                        <motion.div
+                            key={`featured-${eventId}-${idx}`}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: idx * 0.1 }}
+                        >
+                            <EventCard
+                                event={event}
+                                onRegister={onRegister}
+                                onCancel={onCancel}
+                                onClick={() => onClick(eventId)}
+                            />
+                        </motion.div>
+                    );
+                })}
             </div>
         </div>
     );

@@ -5,17 +5,19 @@ import { eventService } from "@/services/eventService";
 const AnalyticsCard = ({ events }) => {
   const totalEvents = events.length;
   const [upcomingEvents, setUpcomingEvents] = useState(0);
+  const [registeredCount, setRegisteredCount] = useState(0);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
-
-  // TODO: Kết nối API đếm số sự kiện đã đăng ký (chưa cài đặt)
-  const registeredCount = events.filter((e) => e.registered).length;
+  const [loadingRegistered, setLoadingRegistered] = useState(true);
 
   useEffect(() => {
     const fetchUpcomingCount = async () => {
       try {
         setLoadingUpcoming(true);
         const count = await eventService.getUpcomingEventsCount();
-        setUpcomingEvents(count);
+        // Ensure count is a number
+        const numericCount = typeof count === 'number' ? count : 
+                            (typeof count === 'object' && count?.count !== undefined) ? count.count : 0;
+        setUpcomingEvents(numericCount);
       } catch (error) {
         console.error("Error fetching upcoming events count:", error);
         const fallbackCount = events.filter(
@@ -27,7 +29,23 @@ const AnalyticsCard = ({ events }) => {
       }
     };
 
+    const fetchRegisteredCount = async () => {
+      try {
+        setLoadingRegistered(true);
+        const count = await eventService.getRegisteredEventsCount();
+        setRegisteredCount(typeof count === 'number' ? count : 0);
+      } catch (error) {
+        console.error("Error fetching registered events count:", error);
+        // Fallback: use local filtering
+        const fallbackCount = events.filter((e) => e.registered).length;
+        setRegisteredCount(fallbackCount);
+      } finally {
+        setLoadingRegistered(false);
+      }
+    };
+
     fetchUpcomingCount();
+    fetchRegisteredCount();
   }, [events]);
 
   // Mock monthly data for the mini chart
@@ -45,7 +63,7 @@ const AnalyticsCard = ({ events }) => {
             Tổng sự kiện
           </p>
           <p className="text-lg sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            {totalEvents}
+            {typeof totalEvents === 'number' ? totalEvents : 0}
           </p>
         </div>
       </div>
@@ -64,7 +82,7 @@ const AnalyticsCard = ({ events }) => {
             </div>
           ) : (
             <p className="text-lg sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              {upcomingEvents}
+              {typeof upcomingEvents === 'number' ? upcomingEvents : 0}
             </p>
           )}
         </div>
@@ -78,9 +96,15 @@ const AnalyticsCard = ({ events }) => {
           <p className="text-[10px] sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium">
             Đã đăng ký
           </p>
-          <p className="text-lg sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            {registeredCount}
-          </p>
+          {loadingRegistered ? (
+            <div className="text-lg sm:text-2xl font-bold text-zinc-400 dark:text-zinc-600 animate-pulse">
+              ...
+            </div>
+          ) : (
+            <p className="text-lg sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+              {typeof registeredCount === 'number' ? registeredCount : 0}
+            </p>
+          )}
         </div>
       </div>
 

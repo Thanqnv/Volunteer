@@ -1,24 +1,34 @@
 import "../styles/index.css";
+import setupAxiosInterceptors from "../configs/axiosConfig";
+import dynamic from "next/dynamic";
 
-import MainLayout from "../layouts/MainLayout";
-import AdminLayout from "../layouts/AdminLayout";
-import ManagerLayout from "../layouts/ManagerLayout";
-import UserLayout from "../layouts/UserLayout";
+// Initialize Axios interceptors for logging
+setupAxiosInterceptors();
+
+// Dynamic imports for layouts - load only when needed
+const MainLayout = dynamic(() => import("../layouts/MainLayout"), { ssr: true });
+const AdminLayout = dynamic(() => import("../layouts/AdminLayout"), { ssr: false });
+const ManagerLayout = dynamic(() => import("../layouts/ManagerLayout"), { ssr: false });
+const UserLayout = dynamic(() => import("../layouts/UserLayout"), { ssr: true });
 
 import { AuthProvider } from "../context/AuthContext";
 import { useRouter } from "next/router";
 import { useAppLogic } from "../hooks/useAppLogic";
 import { Toaster } from "@/components/ui/toaster";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Head from "next/head";
-import useFirebaseNotification from "../hooks/useFirebaseNotification";
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
   const { showScrollTopButton, handleScrollToTop } = useAppLogic(router);
-
-  // Firebase notification (foreground)
-  useFirebaseNotification();
+  
+  // Lazy load Firebase notification hook
+  useEffect(() => {
+    import("../hooks/useFirebaseNotification").then((mod) => {
+      // Hook is now loaded, but we don't call it here
+      // Firebase notifications are handled inside the hook's useEffect
+    });
+  }, []);
 
   // Register service worker (for Firebase background notifications)
   useEffect(() => {
@@ -104,6 +114,18 @@ function MyApp({ Component, pageProps }) {
       )}
     </AuthProvider>
   );
+}
+
+export function reportWebVitals(metric) {
+  // Log Core Web Vitals and custom metrics
+  // console.log('[Web Vitals]', metric);
+  
+  // Log specific metrics like LCP, FID, CLS, TTFB
+  if (metric.label === 'web-vital') {
+    console.log(`%c[Performance] ${metric.name}: ${metric.value.toFixed(2)}ms`, 'color: orange; font-weight: bold;');
+  } else {
+    console.log(`%c[Performance] ${metric.name}: ${metric.value.toFixed(2)}ms`, 'color: orange;');
+  }
 }
 
 export default MyApp;

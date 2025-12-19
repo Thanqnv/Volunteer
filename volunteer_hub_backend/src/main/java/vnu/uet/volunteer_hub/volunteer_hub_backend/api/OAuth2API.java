@@ -27,13 +27,12 @@ public class OAuth2API {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
-    private final long jwtExpirationMs;
+    @Value("${jwt.expiration-ms}")
+    private long jwtExpirationMs;
 
-    public OAuth2API(JwtUtil jwtUtil, UserRepository userRepository,
-            @Value("${security.jwt.expiration-ms}") long jwtExpirationMs) {
+    public OAuth2API(JwtUtil jwtUtil, UserRepository userRepository) {
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
-        this.jwtExpirationMs = jwtExpirationMs;
     }
 
     /**

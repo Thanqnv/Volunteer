@@ -48,7 +48,7 @@ export default function EventDetailLayout({
                 <div className="flex flex-wrap items-center gap-4 text-white/80 text-sm">
                   <span className="inline-flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
-                    {event.location}
+                    {typeof event.location === 'string' ? event.location : event.location?.name || 'N/A'}
                   </span>
                   <span className="inline-flex items-center gap-2">
                     <CalendarDays className="w-4 h-4" />

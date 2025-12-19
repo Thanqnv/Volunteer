@@ -19,31 +19,31 @@ WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_name = 'MANAGER');
 -- 1) Users (generate UUID for user_id since we're using raw SQL)
 -- Passwords below are bcrypt hashes for 'P@ssw0rd' (adjust if your app uses a different hashing scheme)
 -- Admin user
-INSERT INTO users (user_id, name, email, password, is_active, account_type, created_at, updated_at)
-SELECT gen_random_uuid(), 'Admin User', 'admin@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, 'ADMIN', now(), now()
+INSERT INTO users (user_id, name, email, password, is_active, created_at, updated_at)
+SELECT gen_random_uuid(), 'Admin User', 'admin@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@example.com');
 
 -- Volunteer users
-INSERT INTO users (user_id, name, email, password, is_active, account_type, created_at, updated_at)
-SELECT gen_random_uuid(), 'Sarah Johnson', 'sarah.johnson@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, 'VOLUNTEER', now(), now()
+INSERT INTO users (user_id, name, email, password, is_active, created_at, updated_at)
+SELECT gen_random_uuid(), 'Sarah Johnson', 'sarah.johnson@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'sarah.johnson@example.com');
 
-INSERT INTO users (user_id, name, email, password, is_active, account_type, created_at, updated_at)
-SELECT gen_random_uuid(), 'Michael Chen', 'michael.chen@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, 'VOLUNTEER', now(), now()
+INSERT INTO users (user_id, name, email, password, is_active, created_at, updated_at)
+SELECT gen_random_uuid(), 'Michael Chen', 'michael.chen@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'michael.chen@example.com');
 
-INSERT INTO users (user_id, name, email, password, is_active, account_type, created_at, updated_at)
-SELECT gen_random_uuid(), 'Emily Rodriguez', 'emily.rodriguez@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, 'VOLUNTEER', now(), now()
+INSERT INTO users (user_id, name, email, password, is_active, created_at, updated_at)
+SELECT gen_random_uuid(), 'Emily Rodriguez', 'emily.rodriguez@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'emily.rodriguez@example.com');
 
 -- Locked volunteer (inactive account)
-INSERT INTO users (user_id, name, email, password, is_active, account_type, created_at, updated_at)
-SELECT gen_random_uuid(), 'James Wilson', 'james.wilson@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', false, 'VOLUNTEER', now(), now()
+INSERT INTO users (user_id, name, email, password, is_active, created_at, updated_at)
+SELECT gen_random_uuid(), 'James Wilson', 'james.wilson@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', false, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'james.wilson@example.com');
 
 -- Manager user
-INSERT INTO users (user_id, name, email, password, is_active, account_type, created_at, updated_at)
-SELECT gen_random_uuid(), 'Lisa Anderson', 'lisa.anderson@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, 'MANAGER', now(), now()
+INSERT INTO users (user_id, name, email, password, is_active, created_at, updated_at)
+SELECT gen_random_uuid(), 'Lisa Anderson', 'lisa.anderson@example.com', '$2a$10$DOWSDmYyQ1sQy0pFh3q9peb7Jc3fWn8kzqfWQH8mZq6hK2q3e9Y6', true, now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'lisa.anderson@example.com');
 
 -- 2) Link users to roles (use subqueries to find generated ids)
