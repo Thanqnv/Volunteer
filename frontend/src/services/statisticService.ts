@@ -8,13 +8,20 @@ import { MOCK_DASHBOARD_STATS } from '@/data/statisticData';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
+const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return { Authorization: `Bearer ${token}` };
+};
+
 export const statisticService = {
     getStatistics: async () => {
         try {
             // const response = await fetch(`${API_BASE_URL}/api/statistic`, {
             //     method: "GET",
             // });
-            const response = await axios.get(`${API_BASE_URL}/api/statistic`);
+            const response = await axios.get(`${API_BASE_URL}/api/statistic`, {
+                headers: getAuthHeader()
+            });
             if (!response.ok) {
                 // If backend fails or not implemented, return mock data for now 
                 // to prevent breaking the UI during refactor if the user hasn't set up the API yet.

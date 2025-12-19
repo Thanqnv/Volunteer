@@ -44,7 +44,9 @@ const getAuthHeader = () => {
 export const GROUP_SERVICE = {
     getAllGroups: async (page = 1, limit = 9) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/groups?page=${page}&limit=${limit}`);
+            const response = await axios.get(`${API_BASE_URL}/api/groups?page=${page}&limit=${limit}`, {
+                headers: getAuthHeader()
+            });
             if (!response.ok) throw new Error("Lỗi khi tải danh sách nhóm");
             return response.data;
         } catch (error) {
@@ -59,7 +61,9 @@ export const GROUP_SERVICE = {
     },
     getGroupById: async (id) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/groups/${id}`);
+            const response = await axios.get(`${API_BASE_URL}/api/groups/${id}`, {
+                headers: getAuthHeader()
+            });
             if (!response.ok) throw new Error("Lỗi khi tải thông tin nhóm");
             return response.data;
         } catch (error) {

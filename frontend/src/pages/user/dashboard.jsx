@@ -52,7 +52,11 @@ export default function EventShowcase() {
       setIsSlideUpOpen(true);
 
       const details = await eventService.getEventDetails(eventId);
-      setSelectedEvent(details);
+      // Preserve the registered status from local event data
+      setSelectedEvent({
+        ...details,
+        registered: localEvent?.registered || details.registered
+      });
     } catch (err) {
       console.error("Error fetching details:", err);
       setSelectedEvent({

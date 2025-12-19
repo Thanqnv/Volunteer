@@ -6,6 +6,11 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
+const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return { Authorization: `Bearer ${token}` };
+};
+
 export const notificationService = {
     async getNotifications(page = 1, limit = 10) {
         try {
@@ -16,7 +21,7 @@ export const notificationService = {
             //     },
             // });
             const response = await axios.get(`${API_URL}/api/notifications?page=${page}&limit=${limit}`, {
-                headers: { "Content-Type": "application/json" },
+                headers: getAuthHeader(),
             });
 
             if (!response.ok) {
@@ -43,8 +48,9 @@ export const notificationService = {
             // );
             const response = await axios.post(
                 `${API_URL}/api/notifications/${id}/mark-read`,
+                {},
                 {
-                    headers: { "Content-Type": "application/json", },
+                    headers: getAuthHeader(),
                 }
             );
 

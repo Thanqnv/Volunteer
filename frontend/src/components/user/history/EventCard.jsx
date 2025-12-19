@@ -18,8 +18,14 @@ const EVENT_STATUS_CONFIG = {
 };
 
 export const EventCard = ({ event }) => {
-    const statusConfig = EVENT_STATUS_CONFIG[event.status] || EVENT_STATUS_CONFIG.pending;
+    // Use eventId or fallback for status mapping
+    const eventStatus = event.registrationStatus?.toLowerCase() || 'registered';
+    const statusConfig = EVENT_STATUS_CONFIG[eventStatus] || EVENT_STATUS_CONFIG.pending;
     const StatusIcon = statusConfig.icon;
+    
+    // Safely handle date - use startTime from backend
+    const eventDate = event.startTime ? new Date(event.startTime) : null;
+    const isValidDate = eventDate && !isNaN(eventDate.getTime());
 
     return (
         <motion.div
@@ -35,9 +41,15 @@ export const EventCard = ({ event }) => {
             <div className="flex flex-col md:flex-row gap-6 relative z-10 w-full">
                 {/* Date Box */}
                 <div className="flex-shrink-0 flex flex-col items-center justify-center w-full md:w-20 h-20 bg-zinc-50 rounded-xl border border-zinc-100 group-hover:bg-white group-hover:border-emerald-200 transition-colors">
-                    <span className="text-xs font-semibold text-emerald-600 uppercase">Tháng {format(new Date(event.date), 'MM')}</span>
-                    <span className="text-2xl font-bold text-zinc-900">{format(new Date(event.date), 'dd')}</span>
-                    <span className="text-xs text-zinc-400">{format(new Date(event.date), 'yyyy')}</span>
+                    {isValidDate ? (
+                        <>
+                            <span className="text-xs font-semibold text-emerald-600 uppercase">Tháng {format(eventDate, 'MM')}</span>
+                            <span className="text-2xl font-bold text-zinc-900">{format(eventDate, 'dd')}</span>
+                            <span className="text-xs text-zinc-400">{format(eventDate, 'yyyy')}</span>
+                        </>
+                    ) : (
+                        <span className="text-xs text-zinc-400">N/A</span>
+                    )}
                 </div>
 
                 {/* Content */}
@@ -46,7 +58,7 @@ export const EventCard = ({ event }) => {
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-normal bg-zinc-50 border-zinc-200 text-zinc-500">
-                                    {event.category}
+                                    {event.category || 'Tình nguyện'}
                                 </Badge>
                                 <Badge variant="secondary" className={cn("text-[10px] px-2 py-0.5 font-medium border", statusConfig.color)}>
                                     <StatusIcon className="w-3 h-3 mr-1" />
@@ -54,11 +66,11 @@ export const EventCard = ({ event }) => {
                                 </Badge>
                             </div>
                             <h3 className="text-lg font-bold text-zinc-900 group-hover:text-emerald-700 transition-colors">
-                                {event.name}
+                                {event.title || event.name || 'N/A'}
                             </h3>
                         </div>
 
-                        {(event.status === 'registered' || event.status === 'pending') && (
+                        {(eventStatus === 'pending' || eventStatus === 'approved') && (
                             <Button size="sm" variant="outline" className="text-red-600 border-red-100 hover:bg-red-50 hover:text-red-700 h-8 text-xs">
                                 Huỷ đăng ký
                             </Button>
@@ -68,7 +80,7 @@ export const EventCard = ({ event }) => {
                     <div className="flex items-center gap-4 text-sm text-zinc-500">
                         <div className="flex items-center gap-1.5">
                             <Clock className="w-4 h-4 text-zinc-400" />
-                            {format(new Date(event.date), 'HH:mm')}
+                            {isValidDate ? format(eventDate, 'HH:mm') : 'N/A'}
                         </div>
                         <div className="flex items-center gap-1.5">
                             <MapPin className="w-4 h-4 text-zinc-400" />
@@ -77,31 +89,17 @@ export const EventCard = ({ event }) => {
                     </div>
 
                     {/* Timeline Mini */}
+                    {event.registeredAt && (
                     <div className="pt-4 mt-2 border-t border-zinc-50 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                        {event.timeline.registered && <TimelineItem date={event.timeline.registered} label="Đăng ký" />}
-                        {event.timeline.approved && (
+                        <TimelineItem date={event.registeredAt} label="Đăng ký" />
+                        {event.isCompleted && (
                             <>
                                 <div className="h-px w-8 bg-emerald-200" />
-                                <TimelineItem date={event.timeline.approved} label="Được duyệt" />
-                            </>
-                        )}
-                        {event.timeline.completed && (
-                            <>
-                                <div className="h-px w-8 bg-emerald-200" />
-                                <TimelineItem date={event.timeline.completed} label="Hoàn thành" />
-                            </>
-                        )}
-                        {event.timeline.cancelled && (
-                            <>
-                                <div className="h-px w-8 bg-red-200" />
-                                <div className="flex flex-col items-center min-w-[100px]">
-                                    <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow-sm mb-1" />
-                                    <span className="text-[10px] text-zinc-400 font-medium uppercase">Đã huỷ</span>
-                                    <span className="text-xs text-zinc-700 font-semibold">{format(new Date(event.timeline.cancelled), 'dd/MM/yyyy')}</span>
-                                </div>
+                                <TimelineItem date={event.registeredAt} label="Hoàn thành" />
                             </>
                         )}
                     </div>
+                    )}
                 </div>
             </div>
         </motion.div>

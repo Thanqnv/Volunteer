@@ -25,6 +25,16 @@ public interface UserService {
 
     void updatePassword(String email, String newPassword);
 
+    /**
+     * Thay đổi mật khẩu cho user đã đăng nhập.
+     * 
+     * @param userId          ID của user
+     * @param currentPassword mật khẩu hiện tại
+     * @param newPassword     mật khẩu mới
+     * @throws IllegalArgumentException nếu mật khẩu hiện tại không đúng
+     */
+    void changePassword(UUID userId, String currentPassword, String newPassword);
+
     void lockUserById(UUID userId);
 
     void unlockUserById(UUID userId);

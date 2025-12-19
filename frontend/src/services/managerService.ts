@@ -9,18 +9,28 @@ import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token');
+  return { Authorization: `Bearer ${token}` };
+};
+
 export const login = async (credentials) => {
   const response = await axios.post(`${API_BASE_URL}/api/auth/login`, credentials);
   return response.data;
 }
 
 export async function getProfile(userId) {
-  const response = await axios.get(`${API_BASE_URL}/api/users`);
+  const response = await axios.get(`${API_BASE_URL}/api/users`, {
+    headers: getAuthHeader()
+  });
   return response.data;
 }
 
-export async function updateProfile(userId, updated) {
-  const response = await axios.put(`${API_BASE_URL}/api/users/profile/${userId}`, updated);
+export async function updateProfile(updated) {
+  // Backend gets userId from JWT token
+  const response = await axios.put(`${API_BASE_URL}/api/users/profile`, updated, {
+    headers: getAuthHeader()
+  });
   return response.data;
 }
 
@@ -87,7 +97,9 @@ export async function updateProfile(userId, updated) {
 // }
 
 export async function getEvents() {
-  const response = await axios.get(`${API_BASE_URL}/api/events`);
+  const response = await axios.get(`${API_BASE_URL}/api/events`, {
+    headers: getAuthHeader()
+  });
   return response.data;
 }
 

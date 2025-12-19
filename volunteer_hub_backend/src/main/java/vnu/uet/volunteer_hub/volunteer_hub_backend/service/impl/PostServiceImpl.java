@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.ZSetOperations.TypedTuple;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.CreatePostRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.request.UpdatePostRequest;
 import vnu.uet.volunteer_hub.volunteer_hub_backend.dto.response.AuthorSummaryDTO;
@@ -79,6 +80,7 @@ public class PostServiceImpl implements PostService {
      * personalization and sort by personalized score. For anonymous users we
      * return slices directly from the ZSET (global ranking).
      */
+    @Transactional(readOnly = true)
     public Page<ScoredPostDTO> getVisiblePosts(UUID viewerId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         if (viewerId == null) {
@@ -309,6 +311,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PostDetailResponse getPostDetail(UUID postId, UUID viewerId) {
         // Get post with author and event
         Post post = postRepository.findByIdWithAuthorAndEvent(postId);
@@ -372,6 +375,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public PostDetailResponse likePost(UUID postId, UUID viewerId, ReactionType reactionType) {
         // validate post
         Post post = postRepository.findByIdWithAuthorAndEvent(postId);
@@ -423,6 +427,7 @@ public class PostServiceImpl implements PostService {
      * - Consider adding optimistic locking with @Version
      */
     @Override
+    @Transactional
     public ScoredPostDTO updatePost(UUID postId, UpdatePostRequest request, UUID authorId) {
         // Find the post
         Post post = postRepository.findByIdWithAuthorAndEvent(postId);
@@ -478,6 +483,7 @@ public class PostServiceImpl implements PostService {
      * - Add audit logging
      */
     @Override
+    @Transactional
     public void deletePost(UUID postId, UUID authorId) {
         // Check if post exists
         Post post = postRepository.findById(postId)
@@ -509,6 +515,7 @@ public class PostServiceImpl implements PostService {
      * - Consider caching for frequently accessed user profiles
      */
     @Override
+    @Transactional(readOnly = true)
     public Page<ScoredPostDTO> getPostsByUserId(UUID userId, int page, int size) {
         // Check if user exists
         boolean userExists = userRepository.existsById(userId);

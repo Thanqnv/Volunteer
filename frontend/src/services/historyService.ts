@@ -4,10 +4,17 @@ import { getEvents } from "./managerService";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 export const historyService = {
-    getEvents: async (userId, filters = {}) => {
+    getEvents: async (filters = {}) => {
+    // Backend gets userId from JWT token, no need to pass it in URL
+    const token = localStorage.getItem('token');
     const response = await axios.get(
-        `${API_BASE_URL}/api/users/${userId}/events`,
-        { params: filters }
+        `${API_BASE_URL}/api/users/events`,
+        { 
+            params: filters,
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
     );
     return response;
 

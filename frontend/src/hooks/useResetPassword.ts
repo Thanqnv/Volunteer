@@ -54,10 +54,12 @@ export const useResetPassword = (onSuccess) => {
           },
       );
 
-      const data = await res.json().catch(() => ({}));
+      // Axios response structure: res.data contains the response body
+      const data = res.data || {};
       const serverMessage = data?.message || data?.data || null;
 
-      if (!res.ok) {
+      // Axios doesn't have res.ok, check status code instead
+      if (res.status < 200 || res.status >= 300) {
         const err = serverMessage || "Không thể đặt lại mật khẩu.";
         setMessage(err);
         toast({ title: "Lỗi", description: err, variant: "destructive" });

@@ -53,7 +53,7 @@ export default function UserProfilePage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/user/login");
+      router.push("/login");
     } else getUser();
   }, [router]);
 
@@ -133,7 +133,7 @@ export default function UserProfilePage() {
 
       localStorage.removeItem("token");
       localStorage.removeItem("userId");
-      router.push("/user/login");
+      router.push("/login");
     } catch (error) {
       toast({
         title: "Xóa tài khoản thất bại",
@@ -159,8 +159,9 @@ export default function UserProfilePage() {
 
     try {
       await userService.changePassword({
-        current: oldPassword,
-        new: newPassword,
+        currentPassword: oldPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
       });
 
       toast({
@@ -170,7 +171,7 @@ export default function UserProfilePage() {
 
       localStorage.removeItem("token");
       localStorage.removeItem("userId");
-      router.push("/user/login");
+      router.push("/login");
     } catch (error) {
       toast({
         title: "Đổi mật khẩu thất bại",
@@ -185,7 +186,7 @@ export default function UserProfilePage() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
-    router.push("/user/login");
+    router.push("/login");
   };
 
   return (

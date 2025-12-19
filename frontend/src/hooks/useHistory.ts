@@ -16,11 +16,17 @@ export const useHistory = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            let userId = localStorage.getItem('userId');
-            console.log('Fetched userId from localStorage:', userId);
-            await historyService.getEvents(userId).then(response => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('No token found, skipping event fetch');
+                setIsLoading(false);
+                return;
+            }
+            console.log('Fetching events from /api/users/events');
+            await historyService.getEvents().then(response => {
                 setEvents(response.data.data);
             }).catch(err => {
+                console.error('Error fetching events:', err);
                 setError(err);
             }).finally(() => {
                 setIsLoading(false);

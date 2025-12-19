@@ -45,11 +45,12 @@ export const userService = {
 
   /**
    * Change user password
-   * @param {Object} data - { current, new }
+   * Uses auth/change-password endpoint
+   * @param {Object} data - { currentPassword, newPassword, confirmPassword }
    */
   changePassword: async (data) => {
-    const response = await axios.put(
-      `${API_BASE_URL}/api/users/me/password`,
+    const response = await axios.post(
+      `${API_BASE_URL}/api/auth/change-password`,
       data,
       {
         headers: getAuthHeader(),
@@ -70,12 +71,12 @@ export const userService = {
 
   /**
    * Update user profile
-   * @param {string} userId
+   * Backend gets userId from JWT token, no need to pass in URL
    * @param {Object} profileData - { firstName, lastName, email, etc. }
    */
-  updateUserProfile: async (userId, profileData) => {
+  updateUserProfile: async (profileData) => {
     const response = await axios.put(
-      `${API_BASE_URL}/api/users/profile/${userId}`,
+      `${API_BASE_URL}/api/users/profile`,
       profileData,
       {
         headers: {

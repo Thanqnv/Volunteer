@@ -17,12 +17,17 @@ export const eventService = {
   /* USER */
 
   getAllEvents: async (params = {}) => {
-    const res = await axios.get(`${API_BASE_URL}/api/events`, { params });
+    const res = await axios.get(`${API_BASE_URL}/api/events`, { 
+      params,
+      headers: getAuthHeader()
+    });
     return res;
   },
 
   getEventDetails: async (eventId) => {
-    const res = await axios.get(`${API_BASE_URL}/api/events/${eventId}`);
+    const res = await axios.get(`${API_BASE_URL}/api/events/${eventId}`, {
+      headers: getAuthHeader()
+    });
     // API returns {data: {...}, message, detail} - extract actual event data
     return res.data?.data || res.data;
   },
@@ -40,12 +45,20 @@ export const eventService = {
   },
 
   cancelRegistration: async (eventId) => {
-    const res = await axios.post(
-      `${API_BASE_URL}/api/events/${eventId}/cancel`,
-      {},
+    const res = await axios.delete(
+      `${API_BASE_URL}/api/events/${eventId}/participants`,
       { headers: getAuthHeader() }
     );
     return res.data;
+  },
+
+  // Get current user's registered events
+  getMyRegisteredEvents: async () => {
+    const res = await axios.get(
+      `${API_BASE_URL}/api/users/events`,
+      { headers: getAuthHeader() }
+    );
+    return res.data?.data || [];
   },
 
   /* ADMIN */
@@ -102,7 +115,9 @@ export const eventService = {
   },
 
   getUpcomingEventsCount: async () => {
-    const res = await axios.get(`${API_BASE_URL}/api/events/upcoming-count`);
+    const res = await axios.get(`${API_BASE_URL}/api/events/upcoming-count`, {
+      headers: getAuthHeader()
+    });
     const data = res.data?.data;
     // Backend returns { data: [...], message: "...", detail: null }
     // So we need to get array length
@@ -110,7 +125,9 @@ export const eventService = {
   },
 
   getRegisteredEventsCount: async () => {
-    const res = await axios.get(`${API_BASE_URL}/api/events/registered-events-count`);
+    const res = await axios.get(`${API_BASE_URL}/api/events/registered-events-count`, {
+      headers: getAuthHeader()
+    });
     // Backend returns { data: number, message: "...", detail: null }
     return res.data?.data || 0;
   },

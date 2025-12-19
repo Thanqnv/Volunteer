@@ -1,13 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SlideUpDetail from "@/components/ui/slide-up.jsx";
 import { Calendar, MapPin, Clock, Tag, Share2, Heart } from 'lucide-react';
 
 const EventDetailSlideUp = ({ isOpen, onClose, event, onRegister, onCancel }) => {
+    const [isRegistered, setIsRegistered] = useState(false);
+
+    // Update registration status when event prop changes
+    useEffect(() => {
+        if (event) {
+            setIsRegistered(event.registered || event.registrationStatus === 'APPROVED');
+        }
+    }, [event, event?.registered, event?.registrationStatus]);
+
     if (!event) return null;
 
     // Support both formats: event_id and eventId
     const eventId = event.event_id || event.eventId || event.id;
-    const isRegistered = event.registered || event.registrationStatus === 'APPROVED';
     
     // Support both formats: start_time and startTime
     const startTime = event.start_time || event.startTime;
@@ -187,7 +195,15 @@ const EventDetailSlideUp = ({ isOpen, onClose, event, onRegister, onCancel }) =>
                             </div>
 
                             <button
-                                onClick={() => isRegistered ? onCancel(eventId) : onRegister(eventId)}
+                                onClick={async () => {
+                                    if (isRegistered) {
+                                        await onCancel(eventId);
+                                        setIsRegistered(false);
+                                    } else {
+                                        await onRegister(eventId);
+                                        setIsRegistered(true);
+                                    }
+                                }}
                                 className={`w-full py-3 rounded-xl font-bold text-lg mb-3 transition-all ${isRegistered
                                         ? "bg-zinc-200 text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300"
                                         : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02]"

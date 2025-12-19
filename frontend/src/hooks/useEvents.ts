@@ -34,14 +34,36 @@ export const useEvents = (initialPage = 1, limit = 9) => {
         image: event.image || event.thumbnailUrl || "",
     }), []);
 
-    // Fetch Events
+    // Fetch Events with registration status
     const fetchEvents = useCallback(async (page) => {
         setIsLoading(true);
         setError(null);
         try {
+            // Fetch all events
             const response = await eventService.getAllEvents();
             const rawEvents = response.data["data"] || [];
-            const events = rawEvents.map(normalizeEvent);
+            let events = rawEvents.map(normalizeEvent);
+            
+            // Fetch user's registered events to mark registration status
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const registeredEvents = await eventService.getMyRegisteredEvents();
+                    const registeredEventIds = new Set(
+                        registeredEvents.map((e: any) => e.eventId || e.event_id || e.id)
+                    );
+                    
+                    // Merge registration status into events
+                    events = events.map(event => ({
+                        ...event,
+                        registered: registeredEventIds.has(event.event_id)
+                    }));
+                    
+                    console.log("Registered event IDs:", Array.from(registeredEventIds));
+                } catch (regErr) {
+                    console.warn("Could not fetch registration status:", regErr);
+                }
+            }
             
             console.log("Fetched and normalized events:", events);
 
@@ -121,10 +143,18 @@ export const useEvents = (initialPage = 1, limit = 9) => {
                 e.event_id === eventId ? { ...e, registered: true } : e
             );
             setAllEvents(updatedEvents);
-            setFeaturedEvents(updatedEvents);
+            setFeaturedEvents(updatedEvents.slice(0, 5));
             return true;
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            // If user is already registered (400 error), update state to reflect that
+            if (err.response?.status === 400 && err.response?.data?.message?.includes('already registered')) {
+                const updatedEvents = allEvents.map(e =>
+                    e.event_id === eventId ? { ...e, registered: true } : e
+                );
+                setAllEvents(updatedEvents);
+                setFeaturedEvents(updatedEvents.slice(0, 5));
+            }
             return false;
         }
     };
@@ -136,7 +166,7 @@ export const useEvents = (initialPage = 1, limit = 9) => {
                 e.event_id === eventId ? { ...e, registered: false } : e
             );
             setAllEvents(updatedEvents);
-            setFeaturedEvents(updatedEvents);
+            setFeaturedEvents(updatedEvents.slice(0, 5));
             return true;
         } catch (err) {
             console.error(err);
